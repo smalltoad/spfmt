@@ -1,0 +1,11 @@
+this test case has no leading whitespace
+this test case has a single leading whitespace
+this test case has many leading whitespace
+this test case has a single leading tab
+this test case has many leading tab
+
+thistestcasehasnoleadingwhitespace
+thistestcasehasasingleleadingwhitespace
+thistestcasehasmanyleadingwhitespace
+thistestcasehasasingleleadingtab
+thistestcasehasmanyleadingtab

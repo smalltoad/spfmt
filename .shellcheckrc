@@ -1,0 +1,37 @@
+# File: .shellcheckrc
+# Desc: Shellcheck configuration file for default flags when linting.
+# Author: Joseph Mowery <mowery.joseph@outlook.com>
+
+# Specify the shell dialect - 'sh' enforces POSIX compliance
+shell=sh
+
+# Enables extra checks not on by default, increases robustness
+enable=add-default-case
+enable=avoid-nullary-conditions
+enable=check-background-pid-usage
+enable=check-empty-case-statement
+enable=check-extra-masked-returns
+enable=check-set-e-suppressed
+enable=check-unassigned-uppercase
+enable=deprecate-which
+enable=warn-about-modification-time
+enable=quote-safe-variables
+enable=require-double-brackets
+enable=require-variable-assignment-usage
+enable=check-empty-case-statement
+enable=check-background-pid-usage
+enable=warn-about-modification-time
+
+# Style and formatting consistency
+enable=check-long-lines
+enable=require-consistent-spacing
+enable=require-variable-braces
+enable=warn-about-modification-syntax
+
+# Performance considerations
+enable=warn-about-subshell-overhead
+enable=suggest-builtin-alternatives
+
+# Tells ShellCheck where to look for sourced files
+external-sources=true
+source-path=libs:scripts:utils

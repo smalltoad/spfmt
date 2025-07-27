@@ -1,0 +1,10 @@
+# Generated Make environment from project_env file
+# This file is auto-generated - do not edit directly
+# Generated on: Sun Jul  6 19:36:50 EDT 2025
+
+# Variables from project_env
+PROJ_ROOT := /mnt/c/Development/Workspace/shellspec-format
+SRC_DIR := /mnt/c/Development/Workspace/shellspec-format/src
+TEST_DIR := /mnt/c/Development/Workspace/shellspec-format/tests
+BATS_HELPERS := /mnt/c/Development/Workspace/shellspec-format/tests/bats_helpers
+INFO := 1
