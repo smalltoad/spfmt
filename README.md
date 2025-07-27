@@ -1,0 +1,2 @@
+# spfmt
+Shellspec formatter
