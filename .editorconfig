@@ -1,0 +1,32 @@
+# File: .editorconfig
+# Desc: Settings for EditorConfig for consistent coding styles cross projects.
+# Author: Joseph Mowery <mowery.joseph@outlook.com>
+
+# top-most EditorConfig file
+root = true
+
+[*]
+end_of_line = lf  # Unix-style line endings and newline terminators at file end.
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.awk]
+indent_style = space
+indent_size = 4
+
+[*.md]
+trim_trailing_whitespace = false  # Markdown uses trailing spaces for <br>.
+indent_style = space
+indent_size = 4
+
+[*.sh]
+indent_style = space
+indent_size = 4
+switch_case_indent = true  # Indent case statement bodies
+
+[*.txt]
+trim_trailing_whitespace = false
+
+[{M,m}.akefile]
+indent_style = tab

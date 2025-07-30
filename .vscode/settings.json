@@ -1,0 +1,85 @@
+// ___  ________   ____| | | |_ ___   ____  __| |
+// / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
+// \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
+// |___/|_| |_| |_|\__,_|_|_|\__\___/ \____|\____|
+//
+// File: settings.json
+// Desc: Settings file for Visual Studio Code IDE.
+// Author: Joseph Mowery <mowery.joseph@outlook.com>
+
+/* USAGE PHILOSOPHY:
+    This file should strictly describes ONLY "how VSCode should behave" and NOT
+    "what the code should look like". The latter should be handled by some
+    other format specification file/solution (such as EditorConfig) to keep a
+    seperation of concerns and to not tie an IDE to a formatter. */
+
+{
+    // Disable VSCode auto-detect, respect .editorconfig formating decisions.
+    "editor.detectIndentation": false,
+
+    // Visual settings for VSCode editor.
+    "editor.rulers": [ 80 ], // Show vertical line at column 80.
+    //"editor.wordWrap": "bounded",  // Misconstrues column length in editor.
+    "editor.wordWrap": "off", // Disable wordwrap, use ruler as guidance.
+    "editor.wordWrapColumn": 80,
+    "editor.renderWhitespace": "all",
+    // The arrows on the left that toggle visibility of nested code blocks.
+    "editor.showFoldingControls": "always",
+    "editor.minimap.enabled": true,
+
+    "workbench.tree.renderIndentGuides": "always",
+    "workbench.tree.indent": 16,
+
+    // AWK script specific VSCode behavior.
+    "[awk]": {
+        "editor.semanticHighlighting.enabled": true,
+        // Enable automatic formatting for AWK files.
+        "editor.formatOnSave": true,
+        "editor.formatOnType": false,
+        "editor.formatOnPaste": true
+    },
+
+    // Shell script specific VSCode behavior.
+    "[shellscript]": {
+        // Use the shfmt extension for formatting shell scripts.
+        // Requires both the shfmt VSCode extension and binary.
+        "editor.defaultFormatter": "foxundermoon.shell-format",
+        // On save use shfmt with .editorconfig specific formatting decisions.
+        "editor.formatOnSave": true,
+        "editor.formatOnType": false,
+        "editor.formatOnPaste": true
+    },
+
+    // Explicitly enable EditorConfig support.
+    "shellformat.useEditorConfig": true,
+    "shellformat.flag": "--apply-ignore",
+    "shellformat.effectLanguages": [
+        "shellscript",
+        "dockerfile",
+        "dotenv",
+        "gitignore",
+    ],
+
+    // Required for some txt extension files for test input.
+    "[plaintext]": {
+        "files.trimTrailingWhitespace": false,
+        "files.insertFinalNewline": false,
+        "files.trimFinalNewlines": false
+    },
+
+    // File associations to help VSCode recognize AWK files.
+    "files.associations": {
+        "*.awk": "awk",
+        "**/build/spfmt*": "awk",
+        "*.txt": "plaintext",
+        "**/test_data/**/*.txt": "plaintext"
+    },
+
+    // Blanked coverage for files with default behavior.
+    //"files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "files.trimFinalNewlines": true,
+
+    // Extensions behavior.
+    //"extensions.ignoreRecommendations": true, // Silence VSCode recommendations.
+}
