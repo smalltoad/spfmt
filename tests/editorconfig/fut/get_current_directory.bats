@@ -11,21 +11,17 @@
 # function get_current_dir() {
 #     current_dir = ENVIRON["PWD"]
 #
-#     if (!current_dir) { current_dir = "." }
+#     if (!current_dir || !test_directory(current_dir)) { current_dir = "." }
 #
 #     return current_dir
 # }
 
-#=========#
-# GLOBALS #
-#=========#
+#========#
+# SET UP #
+#========#
 
 # Color sourcing must live outside setup() to be available in current env.
 . "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
-
-#============#
-# BATS HOOKS #
-#============#
 
 # Runs for each @test case
 setup() {
