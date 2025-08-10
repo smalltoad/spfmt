@@ -59,9 +59,12 @@ setup() {
     chmod 777 "${tmp_file}"
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up
     rm "${tmp_file}"
 }
 
@@ -80,9 +83,12 @@ setup() {
     chmod 644 "${tmp_file}"
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up
     rm "${tmp_file}"
 }
 
@@ -101,9 +107,12 @@ setup() {
     chmod 333 "${tmp_file}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up.
     rm "${tmp_file}"
 }
 
@@ -122,9 +131,12 @@ setup() {
     chmod 000 "${tmp_file}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Restore file permisions for clean up.
     chmod 644 "${tmp_file}"
     rm "${tmp_file}"
 }
@@ -144,9 +156,12 @@ setup() {
     chmod 040 "${tmp_file}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Restore file permisions for clean up.
     chmod 644 "${tmp_file}"
     rm "${tmp_file}"
 }
@@ -166,9 +181,12 @@ setup() {
     chmod 004 "${tmp_file}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Restore file permisions for clean up.
     chmod 644 "${tmp_file}"
     rm "${tmp_file}"
 }

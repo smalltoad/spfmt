@@ -59,9 +59,12 @@ setup() {
     tmp_file=$(mktemp)
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up.
     rm "${tmp_file}"
 }
 
@@ -69,9 +72,12 @@ setup() {
     tmp_dir=$(mktemp -d)
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_dir}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_dir}" \
+        -x "${expected}"
 
-    # Clean up.
     rmdir "${tmp_dir}"
 }
 
@@ -79,13 +85,15 @@ setup() {
     tmp_file=$(mktemp)
     tmp_link="${tmp_file}.link"
 
-    # Create symlink pointing to regular file.
     ln -s "${tmp_file}" "${tmp_link}"
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_link}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_link}" \
+        -x "${expected}"
 
-    # Clean up.
     rm "${tmp_file}" "${tmp_link}"
 }
 
@@ -93,19 +101,21 @@ setup() {
     tmp_dir=$(mktemp -d)
     tmp_link="${tmp_dir}.link"
 
-    # Create symlink pointing to directory.
     ln -s "${tmp_dir}" "${tmp_link}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_link}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_link}" \
+        -x "${expected}"
 
-    # Clean up.
     rmdir "${tmp_dir}"
     rm "${tmp_link}"
 }
 
 @test "${MAGENTA}[TEST] test_file returns false for broken symlink (l)${RESET}" {
-    # The -u flag just gets a unique name.
+    # Get unique name but dosen't create file.
     tmp_link=$(mktemp -u)
     tmp_target="${tmp_link}.nonexistent"
 
@@ -113,9 +123,12 @@ setup() {
     ln -s "${tmp_target}" "${tmp_link}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_link}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_link}" \
+        -x "${expected}"
 
-    # Clean up.
     rm "${tmp_link}"
 }
 
@@ -127,9 +140,12 @@ setup() {
     mkfifo "${tmp_fifo}"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_fifo}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_fifo}" \
+        -x "${expected}"
 
-    # Clean up.
     rm "${tmp_fifo}"
 }
 
@@ -140,17 +156,31 @@ setup() {
 
     # Only run if /dev/null exists.
     if [ -c "${target}" ]; then
-        assert_awk_stdin "${script}" "${harness}" "${target}" "${expected}"
+        assert_builder \
+            -m "${script}" \
+            -h "${harness}" \
+            -i "${target}" \
+            -x "${expected}"
     else
         skip "Character device /dev/null not available"
     fi
 }
 
 @test "${MAGENTA}[TEST] test_file returns false for block device (b)${RESET}" {
-    # Try to find a block device from common locations.
-    target=""
+    # Reason: This is a BATS test, access to bash is guarenteed.
+    # shellcheck disable=SC3030
+    block_locations=(
+        /dev/sda
+        /dev/sda1
+        /dev/disk0
+        /dev/loop0
+    )
 
-    for device in /dev/sda /dev/sda1 /dev/disk0 /dev/loop0; do
+    target=""
+    expected="1"
+
+    # Try to find a block device from common locations.
+    for device in "${block_locations[@]}"; do
         if [ -b "${device}" ]; then
             target="${device}"
             break
@@ -158,15 +188,18 @@ setup() {
     done
 
     if [ -n "${target}" ]; then
-        expected="1"
-        assert_awk_stdin "${script}" "${harness}" "${target}" "${expected}"
+        assert_builder \
+            -m "${script}" \
+            -h "${harness}" \
+            -i "${target}" \
+            -x "${expected}"
     else
         skip "No accessible block device found for testing"
     fi
 }
 
 @test "${MAGENTA}[TEST] test_file returns false for Unix domain socket (s)${RESET}" {
-    # suppression: This is a BATS test, access to bash is guarenteed.
+    # Reason: This is a BATS test, access to bash is guarenteed.
     # shellcheck disable=SC3030
     uds_locations=(
         "/var/run/docker.sock"               # Docker daemon API socket - modern containerization
@@ -196,7 +229,11 @@ setup() {
 
     if [ -n "${target}" ]; then
         expected="1"  # test -f should return false for sockets
-        assert_awk_stdin "${script}" "${harness}" "${target}" "${expected}"
+        assert_builder \
+            -m "${script}" \
+            -h "${harness}" \
+            -i "${target}" \
+            -x "${expected}"
     else
         skip "No accessible Unix domain socket found in common system locations"
     fi
@@ -207,14 +244,22 @@ setup() {
     target="/this/path/should/not/exist/$(date +%s%N)"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${target}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${target}" \
+        -x "${expected}"
 }
 
 @test "${MAGENTA}[TEST] test_file returns false for empty string${RESET}" {
-    target=""
+    target="\n"
     expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${target}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${target}" \
+        -x "${expected}"
 }
 
 @test "${MAGENTA}[TEST] test_file handles file with no read permissions (-)${RESET}" {
@@ -222,9 +267,12 @@ setup() {
     chmod 000 "${tmp_file}"  # Remove all permissions
     expected="0"  # Should still be detected as a file, even if unreadable
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up (restore permissions first)
     chmod 644 "${tmp_file}"
     rm "${tmp_file}"
 }
@@ -233,9 +281,12 @@ setup() {
     tmp_file=$(mktemp --suffix=" with spaces")
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up
     rm "${tmp_file}"
 }
 
@@ -246,8 +297,11 @@ setup() {
     touch "${tmp_file}"
     expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${tmp_file}" "${expected}"
+    assert_builder \
+        -m "${script}" \
+        -h "${harness}" \
+        -i "${tmp_file}" \
+        -x "${expected}"
 
-    # Clean up
     rm -rf "${tmp_dir}"
 }

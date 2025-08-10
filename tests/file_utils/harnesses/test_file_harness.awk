@@ -5,7 +5,7 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 # Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: Wrapper for editorconfig.awk function of test_file to print results.
+# Description: Wrapper for file_utils.awk function of test_file to print results.
 # File: test_file_harness.bats
 # License: GNU GPLv3
 

@@ -45,7 +45,7 @@ assert_builder() {
     # Reset OPTIND to ensure clean argument parsing.
     OPTIND=1
 
-    while getopts "f:m:e:i:o:h:x:v:" opt; do
+    while getopts "f:h:m:e:i:o:x:v" opt; do
         case "${opt}" in
             f)
                 # Add file to end of command.
@@ -79,13 +79,15 @@ assert_builder() {
                 ;;
             v)
                 # TODO: This breaks the output capture that BATS provides.
-                #   Debugs are also captured, perhaps there is a better way to
-                #   seperate actual output from debug statements in BATS.
+                #    Debugs are also captured, perhaps there is a better way to
+                #    seperate actual output from debug statements in BATS.
                 vars=" -v ${OPTARG}"
                 ;;
             \?)
+                printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
                 ;;
             :)
+                printf "[ERROR] Option of -%s requires an argument." "${OPTARG}" >&2
                 ;;
             *)
                 ;;
@@ -97,10 +99,10 @@ assert_builder() {
     run bash -c "${concat_command}"
 
     if [[ "${INFO}" -eq 1 ]]; then
-    printf "%s%s[INFO]%s Expected: [%q]\n" \
-        "${BOLD}" "${BLUE}" "${RESET}" "${expected}" >&3
-    printf "%s%s[INFO]%s Actual:   [%q]\n" \
-        "${BOLD}" "${BLUE}" "${RESET}" "${output}" >&3
+        printf "%s%s[INFO]%s Expected: [%q]\n" \
+            "${BOLD}" "${BLUE}" "${RESET}" "${expected}" >&3
+        printf "%s%s[INFO]%s Actual:   [%q]\n" \
+            "${BOLD}" "${BLUE}" "${RESET}" "${output}" >&3
     fi
 
     # Check status and output from what BATS captures
