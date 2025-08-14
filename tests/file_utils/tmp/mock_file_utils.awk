@@ -129,25 +129,3 @@ function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
 # *     Result and return of the resolved flag. Matches the string in the
 # *     if-else statement. Returns "" if the passed flag matches nothing.
 # */
-function _value_of_flag(flag,    _FILE, _READABLE, _DIRECTORY, _resolved_flag) {
-    _FILE = "f"
-    _READABLE = "r"
-    _DIRECTORY = "d"
-
-    _resolved_flag = ""
-
-    if (flag == _FILE) {
-        return "file"
-    } else if (flag == _READABLE) {
-        return "readable"
-    } else if (flag == _DIRECTORY) {
-        return "directory"
-    }
-
-    if(debug) {
-        print "[DEBUG] Flag \"" flag "\" is unsupported or malformed."
-    }
-
-    # Return empty string for unsupported flags or a malformed flag.
-    return _resolved_flag
-}

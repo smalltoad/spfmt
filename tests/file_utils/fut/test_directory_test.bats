@@ -27,6 +27,10 @@
 # Color sourcing must live outside setup() to be available in current env.
 . "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
 
+setup_file() {
+    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
 # Runs for each @test case
 setup() {
     # AWK script containing FUT
@@ -40,30 +44,45 @@ setup() {
     load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
 }
 
+teardown_file() {
+    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
 #============#
 # TEST CASES #
 #============#
 
-@test "${MAGENTA}[TEST] test_directory returns false when empty string is passed${RESET}" {
-    input=$(printf "")
-    expected_result="1"
+@test "[TEST] test_directory returns false when empty string is passed" {
+    input="\n"
+    expected="1"
 
-    assert_awk_stdin "${script}" "${harness}" "${input}" "${expected_result}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${input}" \
+        -x "${expected}"
 }
 
-@test "${MAGENTA}[TEST] test_directory returns true when root directory is passed${RESET}" {
+@test "[TEST] test_directory returns true when root directory is passed" {
     input="/"
-    expected_result="0"
+    expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${input}" "${expected_result}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${input}" \
+        -x "${expected}"
 }
 
-@test "${MAGENTA}[TEST] test_directory returns true when valid directory is passed${RESET}" {
-    # Create tmp dir to test is paths with leading slash work
+@test "[TEST] test_directory returns true when valid directory is passed" {
     input=$(mktemp -d)
-    expected_result="0"
+    expected="0"
 
-    assert_awk_stdin "${script}" "${harness}" "${input}" "${expected_result}"
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${input}" \
+        -x "${expected}"
 
     rmdir "${input}"
 }

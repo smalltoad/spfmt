@@ -24,8 +24,11 @@ INSTALL_TARGET := $(BINDIR)/$(PROGRAM_NAME)
 # Configuration flags
 INFO := 1
 
+# TODO: Using too many cores/introducing parellelism  fails file based BATs test.
+JOBS ?= $(shell nproc 2>/dev/null || getconf _NPROCESSORS_ONLN 2>/dev/null || grep -c '^processor' /proc/cpuinfo 2>/dev/null || echo 1)
+
 # CLI options
-BATS_OPTIONS := --tap
+BATS_OPTIONS := --tap --jobs $(JOBS) --formatter /mnt/c/Development/Workspace/shellspec-format/tests/bats_tap_formatter.sh
 AWK_OPTIONS :=
 
 export PROJ_ROOT

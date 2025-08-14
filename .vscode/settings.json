@@ -72,7 +72,9 @@
         "*.awk": "awk",
         "**/build/spfmt*": "awk",
         "*.txt": "plaintext",
-        "**/test_data/**/*.txt": "plaintext"
+        "**/test_data/**/*.txt": "plaintext",
+        "*.sh": "shellscript",
+        "*.bats": "shellscript",
     },
 
     // Blanked coverage for files with default behavior.

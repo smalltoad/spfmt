@@ -349,6 +349,7 @@ function _parse_editorconfig(config_file, line, section, in_shell_section, key, 
 function get_current_dir(current_dir) {
     current_dir = ENVIRON["PWD"]
 
+    # "If current directory is not set OR the directory is not real."
     if (!current_dir || !test_directory(current_dir)) { current_dir = "." }
 
     return current_dir

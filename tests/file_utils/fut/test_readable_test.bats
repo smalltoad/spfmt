@@ -27,6 +27,10 @@
 # Color sourcing must live outside setup() to be available in current env.
 . "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
 
+setup_file() {
+    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
 # Runs for each @test case
 setup() {
     # AWK script containing FUT
@@ -40,11 +44,15 @@ setup() {
     load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
 }
 
+teardown_file() {
+    echo "#=== [END] ${BATS_TEST_FILENAME##*/} [END] ===#" >&3
+}
+
 #============#
 # TEST CASES #
 #============#
 
-@test "${MAGENTA}[TEST] test_readable returns true when everyone has full permissions (chmod 777)${RESET}" {
+@test "[TEST] test_readable returns true when everyone has full permissions (chmod 777)" {
     tmp_file=$(mktemp)
 
     #/**
@@ -68,7 +76,7 @@ setup() {
     rm "${tmp_file}"
 }
 
-@test "${MAGENTA}[TEST] test_readable returns true when only owner has read permissions (chmod 644)${RESET}" {
+@test "[TEST] test_readable returns true when only owner has read permissions (chmod 644)" {
     tmp_file=$(mktemp)
 
     #/**
@@ -92,7 +100,7 @@ setup() {
     rm "${tmp_file}"
 }
 
-@test "${MAGENTA}[TEST] test_readable returns false when only no one has read permissions (chmod 333)${RESET}" {
+@test "[TEST] test_readable returns false when only no one has read permissions (chmod 333)" {
     tmp_file=$(mktemp)
 
     #/**
@@ -116,7 +124,7 @@ setup() {
     rm "${tmp_file}"
 }
 
-@test "${MAGENTA}[TEST] test_readable returns false for no permissions (chmod 000)${RESET}" {
+@test "[TEST] test_readable returns false for no permissions (chmod 000)" {
     tmp_file=$(mktemp)
 
     #/**
@@ -141,7 +149,7 @@ setup() {
     rm "${tmp_file}"
 }
 
-@test "${MAGENTA}[TEST] test_readable returns false when only group has read (chmod 040)${RESET}" {
+@test "[TEST] test_readable returns false when only group has read (chmod 040)" {
     tmp_file=$(mktemp)
 
     #/**
@@ -166,7 +174,7 @@ setup() {
     rm "${tmp_file}"
 }
 
-@test "${MAGENTA}[TEST] test_readable returns false when only others have read (chmod 004)${RESET}" {
+@test "[TEST] test_readable returns false when only others have read (chmod 004)" {
     tmp_file=$(mktemp)
 
     #/**
