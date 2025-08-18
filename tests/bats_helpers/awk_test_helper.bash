@@ -14,7 +14,7 @@
 #=========#
 
 # Turns on INFO prints, disabled by default.
-#   INFO=${INFO:-0}
+INFO=${INFO:-0}
 
 # DIRECTIVE JUSTIFICATION: Will inherit BATS env (otherwise script is being used incorrectly.)
 # shellcheck disable=SC2154
@@ -40,6 +40,7 @@ assert_builder() {
     # Known locations.
     scripts_location="${BATS_TEST_DIRNAME}/../../../src/"
     wrapper_location="${BATS_TEST_DIRNAME}/../harnesses/"
+    mock_location="${BATS_TEST_DIRNAME}/../tmp/"
     input_path="${BATS_TEST_DIRNAME}/../test_data/inputs/"
     output_path="${BATS_TEST_DIRNAME}/../test_data/outputs/"
 
@@ -48,54 +49,60 @@ assert_builder() {
 
     while getopts "f:h:m:e:i:o:x:v" opt; do
         case "${opt}" in
-            f)
-                # Add file to end of command.
-                files="${files} -f ${scripts_location}${OPTARG}"
-                ;;
-            h)
-                # Harness to call FUT.
-                harnesses="${harnesses} -f ${wrapper_location}${OPTARG}"
-                ;;
-            m)
-                # Expecting format "file:function_to_mock1:function_to_mock2..."
-                mock_path=$(mock_script "${OPTARG}")
-                mocks="${mocks} -f ${mock_path}"
-                ;;
-            e)
-                # Add envs to start of command.
-                if [[ -z "${envs}" ]]; then
-                    envs="env ${OPTARG} "
-                else
-                    envs="${envs}${OPTARG} "
-                fi
-                ;;
-            i)
-                # Input through stdin, expeted ":" deliniated list.
-                # Gets properly parsed in harness.
-                stdin="printf "%b" '${OPTARG}' | "
-                ;;
-            o)
-                # Output location
-                output=" ${input_path}${OPTARG} > ${output_path}${OPTARG}"
-                ;;
-            x)
-                # Expected output
-                expected="${OPTARG}"
-                ;;
-            v)
-                # TODO: This breaks the output capture that BATS provides.
-                #    Debugs are also captured, perhaps there is a better way to
-                #    seperate actual output from debug statements in BATS.
-                vars=" -v ${OPTARG}"
-                ;;
-            \?)
-                printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
-                ;;
-            :)
-                printf "[ERROR] Option of -%s requires an argument." "${OPTARG}" >&2
-                ;;
-            *)
-                ;;
+        f)
+            # Add file to end of command.
+            files="${files} -f ${scripts_location}${OPTARG}"
+            ;;
+        h)
+            # Harness to call FUT.
+            harnesses="${harnesses} -f ${wrapper_location}${OPTARG}"
+            ;;
+        m)
+            #/**
+            # * If there is no mock file, then assume parameters passed are
+            # * sufficient to make one.
+            # */
+            if [[ ! -f "${mock_location}${OPTARG%%:*}" ]]; then
+                mock_script "${OPTARG}"
+            fi
+            mocks="${mocks} -f ${mock_location}${OPTARG}"
+            ;;
+        e)
+            # Add envs to start of command.
+            if [[ -z "${envs}" ]]; then
+                envs="env ${OPTARG} "
+            else
+                envs="${envs}${OPTARG} "
+            fi
+            ;;
+        i)
+            # Input through stdin, expeted ":" deliniated list.
+            # Gets properly parsed in harness.
+            #stdin="printf "%b" '${OPTARG}' | "
+
+            stdin="printf '%s' $(printf '%q' "${OPTARG}") | "
+            ;;
+        o)
+            # Output location
+            output=" ${input_path}${OPTARG} > ${output_path}${OPTARG}"
+            ;;
+        x)
+            # Expected output
+            expected="${OPTARG}"
+            ;;
+        v)
+            # TODO: This breaks the output capture that BATS provides.
+            #    Debugs are also captured, perhaps there is a better way to
+            #    seperate actual output from debug statements in BATS.
+            vars=" -v ${OPTARG}"
+            ;;
+        \?)
+            printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
+            ;;
+        :)
+            printf "[ERROR] Option of -%s requires an argument." "${OPTARG}" >&2
+            ;;
+        *) ;;
         esac
     done
 
@@ -119,14 +126,23 @@ assert_builder() {
 # MOCK HELPER #
 #=============#
 
+#/**
+# * Removes functions from a file. Meant for mocking internal functions.
+# * Note that for BATS tests, mocks should be made a single time at the
+# * top of the file. Parellelism issues have occured when this option is
+# * used incorrectly... Prefer -f over this function to avoid flaky tests.
+# *
+# * USAGE:
+# *      Expects format "file:function_to_mock1:function_to_mock2..."
+# */
 mock_script() {
     arguments="$1"
     script_name=${arguments%%:*}
     targets=${arguments#*:}
 
     script_path="${BATS_TEST_DIRNAME}/../../../src/${script_name}"
-
     mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}"
+
     touch "${mock_path}"
 
     sed_command=""
@@ -140,12 +156,7 @@ mock_script() {
         targets=${remaining}
     done
 
-    # Loop through each function name that was passed as an argument and build sed command.
-    #for function_name in "$@"; do
-    #    sed_command="${sed_command} -e '/^function ${function_name}/,/^}$/d'"
-    #done
-
-    eval "sed ${sed_command} '${script_path}'" > "${mock_path}"
+    eval "sed ${sed_command} '${script_path}'" >"${mock_path}"
 
     printf "%s\n" "${mock_path}"
 }

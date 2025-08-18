@@ -64,7 +64,7 @@ teardown_file() {
 # */
 
 @test "[TEST] test_file returns true when target is a normal file (-)" {
-    tmp_file=$(mktemp)
+    tmp_file=$(mktemp --suffix=".$$")
     expected="0"
 
     assert_builder \
@@ -77,7 +77,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_file returns false when target is a directory (d)" {
-    tmp_dir=$(mktemp -d)
+    tmp_dir=$(mktemp -d --suffix=".$$")
     expected="1"
 
     assert_builder \
@@ -90,7 +90,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_file returns true for symlink pointing to regular file (l)" {
-    tmp_file=$(mktemp)
+    tmp_file=$(mktemp --suffix=".$$")
     tmp_link="${tmp_file}.link"
 
     ln -s "${tmp_file}" "${tmp_link}"
@@ -106,7 +106,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_file returns false for symlink pointing to directory (l)" {
-    tmp_dir=$(mktemp -d)
+    tmp_dir=$(mktemp -d --suffix=".$$")
     tmp_link="${tmp_dir}.link"
 
     ln -s "${tmp_dir}" "${tmp_link}"
@@ -124,7 +124,7 @@ teardown_file() {
 
 @test "[TEST] test_file returns false for broken symlink (l)" {
     # Get unique name but dosen't create file.
-    tmp_link=$(mktemp -u)
+    tmp_link=$(mktemp -u --suffix=".$$")
     tmp_target="${tmp_link}.nonexistent"
 
     # Create symlink pointing to non-existent target.
@@ -142,7 +142,7 @@ teardown_file() {
 
 @test "[TEST] test_file returns false for named pipe (FIFO)" {
     # Get unique name but dosen't create file.
-    tmp_fifo=$(mktemp -u)
+    tmp_fifo=$(mktemp -u --suffix=".$$")
 
     # Create named pipe.
     mkfifo "${tmp_fifo}"
@@ -207,43 +207,56 @@ teardown_file() {
 }
 
 @test "[TEST] test_file returns false for Unix domain socket (s)" {
-    # Reason: This is a BATS test, access to bash is guarenteed.
-    # shellcheck disable=SC3030
-    uds_locations=(
-        "/var/run/docker.sock"              # Docker daemon API socket - modern containerization
-        "/run/docker.sock"                  # Alternative Docker location on newer systemd systems
-        "/var/run/dbus/system_bus_socket"   # D-Bus system message bus - inter-process communication
-        "/run/dbus/system_bus_socket"       # Alternative D-Bus location on systemd systems
-        "/var/run/mysqld/mysqld.sock"       # MySQL database local connection socket
-        "/var/run/postgresql/.s.PGSQL.5432" # PostgreSQL database socket (port 5432)
-        "/run/systemd/private"              # Systemd init system internal communication
-        "/var/run/systemd/private"          # Legacy systemd socket location
-        "/tmp/.X11-unix/X0"                 # X Window System display :0 communication socket
-        "/var/run/acpid.socket"             # ACPI daemon for power management events
-        "/run/udev/control"                 # udev device manager control socket
-    )
+    # Create a unique socket path using PID to avoid conflicts in parallel runs
+    test_socket="/tmp/test_socket_$$_${BATS_TEST_NUMBER}"
+    expected="1" # test_file should return false for sockets
 
-    # Try to find an existing Unix domain socket in common locations
-    target=""
+    # Create a Unix domain socket using socat (if available) or netcat
+    # We'll run this in background and clean it up regardless of test outcome
+    if command -v socat >/dev/null 2>&1; then
+        # socat creates a socket and keeps it open
+        socat UNIX-LISTEN:"${test_socket}",fork /dev/null &
+        socket_pid=$!
 
-    # Common system socket locations.
-    for socket_path in "${uds_locations[@]}"; do
-        # Check if it exists and is a socket using test -S
-        if [ -S "${socket_path}" ]; then
-            target="${socket_path}"
-            break
+        # Give socat a moment to create the socket
+        sleep 0.1
+
+        # Verify the socket was created
+        if [ -S "${test_socket}" ]; then
+            assert_builder \
+                -f "${script}" \
+                -h "${harness}" \
+                -i "${test_socket}" \
+                -x "${expected}"
+        else
+            skip "Failed to create test socket with socat"
         fi
-    done
 
-    if [ -n "${target}" ]; then
-        expected="1" # test -f should return false for sockets
-        assert_builder \
-            -m "${script}" \
-            -h "${harness}" \
-            -i "${target}" \
-            -x "${expected}"
+        # Clean up: kill socat and remove socket
+        kill "${socket_pid}" 2>/dev/null || true
+        rm -f "${test_socket}"
+
+    elif command -v nc >/dev/null 2>&1; then
+        # Alternative using netcat (though less reliable for this purpose)
+        nc -lU "${test_socket}" &
+        socket_pid=$!
+        sleep 0.1
+
+        if [ -S "${test_socket}" ]; then
+            assert_builder \
+                -f "${script}" \
+                -h "${harness}" \
+                -i "${test_socket}" \
+                -x "${expected}"
+        else
+            skip "Failed to create test socket with netcat"
+        fi
+
+        kill "${socket_pid}" 2>/dev/null || true
+        rm -f "${test_socket}"
+
     else
-        skip "No accessible Unix domain socket found in common system locations"
+        skip "Neither socat nor netcat available for creating test socket"
     fi
 }
 
@@ -271,7 +284,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_file handles file with no read permissions (-)" {
-    tmp_file=$(mktemp)
+    tmp_file=$(mktemp --suffix=".$$")
     chmod 000 "${tmp_file}" # Remove all permissions
     expected="0"            # Should still be detected as a file, even if unreadable
 
@@ -286,7 +299,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_file handles path with spaces (-)" {
-    tmp_file=$(mktemp --suffix=" with spaces")
+    tmp_file=$(mktemp --suffix=" with spaces.$$")
     expected="0"
 
     assert_builder \
@@ -300,7 +313,7 @@ teardown_file() {
 
 @test "[TEST] test_file handles path with special characters (-)" {
     # Create file with special characters (be careful with shell metacharacters)
-    tmp_dir=$(mktemp -d)
+    tmp_dir=$(mktemp -d --suffix=".$$")
     tmp_file="${tmp_dir}/file-with_special.chars@123"
     touch "${tmp_file}"
     expected="0"

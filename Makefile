@@ -93,8 +93,9 @@ show-env:
 	@echo "Project: $(PROGRAM_NAME) v$(VERSION)"
 	@echo ""
 	@echo "Versioning"
-	@echo "    GNU: $(AWK_VERSION)"
+	@echo "    AWK: $(AWK_VERSION)"
 	@echo "    BATS: $(BATS_VERSION)"
+	@echo "    BASH: $(BASH_VERSION)"
 	@echo ""
 	@echo "Build Paths:"
 	@echo "    PROJ_ROOT: $(PROJ_ROOT)"
@@ -122,6 +123,13 @@ show-sources:
 	@echo "=== REGISTERED SOURCE FILES ==="
 	@for src in $(PREPARED_SOURCES); do echo "    $$src"; done
 
+#/**
+# * Runs all tests in the /tests folder
+# * To run an individual test file:
+# *     ./tests/parse/fut/strip_trailing_whitespace_test.bats
+# * To run an individual test file with INFO turned on:
+# *     INFO=1 ./tests/parse/fut/strip_trailing_whitespace_test.bats
+# */
 test:
 	@echo "Running tests with configuration:"
 	@echo "    Project Root: $(PROJ_ROOT)"
@@ -129,6 +137,7 @@ test:
 	@echo "    INFO level: $(INFO)"
 	@echo "    DEBUG level: $(DEBUG)"
 	@echo ""
+	@echo "Command used:"
 	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)/*/fut/*.bats
 
 # Default make target

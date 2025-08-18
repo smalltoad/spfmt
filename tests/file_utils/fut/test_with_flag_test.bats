@@ -31,28 +31,34 @@
 # SET UP #
 #========#
 
+# AWK script containing FUT.
+script="file_utils.awk"
+
+# Harness to call specific FUT.
+harness="test_with_flag_harness.awk"
+
 # Color sourcing must live outside setup() to be available in current env.
 . "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
 
+load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
+
 setup_file() {
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
-}
 
-# Runs for each @test case.
-setup() {
-    # AWK script containing FUT.
-    script="file_utils.awk"
+    export mocked_script
 
-    # Harness to call specific FUT.
-    harness="test_with_flag_harness.awk"
+    # Create mock for test suite.
+    mocked_script_path=$(mock_script "${script}:_value_of_flag")
+    mocked_script=$(basename -- "${mocked_script_path}")
 
-    # BATS helpers
-    load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
-    load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
+    echo "${mocked_script}" >&3
 }
 
 teardown_file() {
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+
+    #rm -rf "${script}"
 }
 
 #================#
@@ -111,20 +117,20 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
 }
 
 @test "[TEST] test_with_flag MC/DC test case for F||T should return T" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
+    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
     touch "${tmp_file}"
     flag=""
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -133,13 +139,13 @@ teardown_file() {
 }
 
 @test "[TEST] test_with_flag MC/DC test case for F||F should return F" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
+    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
     touch "${tmp_file}"
     flag="f"
     expected="0"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -152,13 +158,13 @@ teardown_file() {
 #=================#
 
 @test "[TEST] test_with_flag returns true for supported flag -f and regular file" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
+    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
     touch "${tmp_file}"
     flag="f"
     expected="0"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -167,12 +173,13 @@ teardown_file() {
 }
 
 @test "[TEST] test_with_flag returns false for supported flag -f and directory file" {
-    tmp_dir=$(mktemp -d)
+    prefix="test_flag_${BATS_TEST_NUMBER}_${BASHPID}"
+    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
     flag="f"
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
@@ -181,12 +188,12 @@ teardown_file() {
 }
 
 @test "[TEST] test_with_flag returns false for supported flag -f and non-existant file" {
-    non_existent_file="/tmp/definitely/does/not/exist/$(date +%s%N)"
+    non_existent_file="/tmp/definitely/does/not/exist/_"$$
     flag="f"
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${non_existent_file}:${flag}" \
         -x "${expected}"
@@ -197,12 +204,13 @@ teardown_file() {
 #======================#
 
 @test "[TEST] test_with_flag returns true for supported flag -d and directory" {
-    tmp_dir=$(mktemp -d)
+    prefix="test_flag_d_dir_${BATS_TEST_NUMBER}_${BASHPID}"
+    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
     flag="d"
     expected="0"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
@@ -211,13 +219,18 @@ teardown_file() {
 }
 
 @test "[TEST] test_with_flag returns false for supported flag -d and regular file" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
-    touch "${tmp_file}"
+    prefix="test_flag_d_file_${BATS_TEST_NUMBER}_${BASHPID}"
+    tmp_file=$(mktemp "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
+
+    if [[ ! -f "${tmp_file}" ]]; then
+        fail "Failed to create test file: ${tmp_file}"
+    fi
+
     flag="d"
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -230,13 +243,17 @@ teardown_file() {
 #=====================#
 
 @test "[TEST] test_with_flag returns true for supported flag -r and regular file" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
-    touch "${tmp_file}"
+    prefix="test_flag_r_file_${BATS_TEST_NUMBER}_${BASHPID}"
+    tmp_file=$(mktemp "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
     flag="r"
     expected="0"
 
+    if [[ ! -f "${tmp_file}" ]]; then
+        fail "Failed to create test file: ${tmp_file}"
+    fi
+
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -245,18 +262,23 @@ teardown_file() {
 }
 
 @test "[TEST] test_with_flag returns true for supported flag -r and directory" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
-    touch "${tmp_file}"
+    prefix="test_flag_r_directory_${BATS_TEST_NUMBER}_${BASHPID}"
+    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
+
+    if [[ ! -d "${tmp_dir}" ]]; then
+        fail "Failed to create test directory: ${tmp_dir}"
+    fi
+
     flag="r"
     expected="0"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
+        -i "${tmp_dir}:${flag}" \
         -x "${expected}"
 
-    rm "${tmp_file}"
+    rmdir "${tmp_dir}"
 }
 
 #=====================#
@@ -264,13 +286,13 @@ teardown_file() {
 #=====================#
 
 @test "[TEST] test_with_flag returns false for unsupported flag" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file"
+    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
     touch "${tmp_file}"
     flag=""
     expected="1"
 
     assert_builder \
-        -m "${script}:_value_of_flag" \
+        -m "${mocked_script}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
