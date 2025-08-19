@@ -112,10 +112,8 @@ assert_builder() {
     run bash -c "${concat_command}"
 
     if [[ "${INFO}" -eq 1 ]]; then
-        printf "%s%s[INFO]%s Expected: [%q]\n" \
-            "${BOLD}" "${BLUE}" "${RESET}" "${expected}" >&3
-        printf "%s%s[INFO]%s Actual:   [%q]\n" \
-            "${BOLD}" "${BLUE}" "${RESET}" "${output}" >&3
+        printf "[INFO] Expected: [%q]\n" "${expected}" >&3
+        printf "[INFO] Actual:   [%q]\n" "${output}" >&3
     fi
 
     # Check status and output from what BATS captures
@@ -173,8 +171,7 @@ bats_status_check() {
     # SURPRESSION REASON: Greater POSIX compliance.
     # shellcheck disable=SC2292
     [ "${status}" -eq 0 ] || {
-        printf "%s%s[ERROR]%s Exit code was non-zero: [%s]" \
-            "${BOLD}" "${RED}" "${RESET}" "${status}" >&2
+        printf "[ERROR] Exit code was non-zero: [%s]" "${status}" >&2
         return 1
     }
 }
@@ -187,8 +184,7 @@ bats_output_check() {
     # SURPRESSION REASON: Greater POSIX compliance.
     # shellcheck disable=SC2292
     [ "${output}" == "${expected}" ] || {
-        printf "%s%s[ERROR]%s Output did not match expectation.\n" \
-            "${BOLD}" "${RED}" "${RESET}" >&2
+        printf "[ERROR] Output did not match expectation.\n" >&2
         return 1
     }
 }

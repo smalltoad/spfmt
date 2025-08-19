@@ -35,14 +35,18 @@ known_suites="" # Used to keep track of suites, prevents repetitive prints.
 
 #/**
 # * Prints a single complete buffer at a time. Looks ahead to color the headers
-# * of suites and test file starts
+# * of suites and test file starting blocks.
 # */
 print_lines() {
+    # Buffer passed in.
     buffer="$1"
+    # Stores infos for when it the actual test case appears.
+    info_buffer=""
+
     if echo "${buffer}" | grep -iE "suite" >/dev/null; then
         # Does the test contain a fail?
         module_failed=$(echo "${buffer}" | grep -E "not ok" 2>/dev/null)
-        echo "${buffer}" | while IFS= read -r line; do
+        printf '%b\n' "${buffer}" | while IFS= read -r line; do
             case "${line}" in
                 MODULE\ *)
                     # Look ahead and see if the enitre module has a fail or not.
@@ -53,20 +57,41 @@ print_lines() {
                     fi
                     ;;
                 SUITE\ *)
+                    # Grab suite text using embedded AWK script.
                     suite_text=$(extract_suite_from_buffer "${buffer}" "${line##SUITE }")
-                    suite_failed=$(echo "${suite_text}" | grep -E "not ok" 2>/dev/null)
+                    # Determine if the suite failed.
+                    fails=$(echo "${suite_text}" | grep -cE "not ok" 2>/dev/null)
+                    passes=$(echo "${suite_text}" | grep -cE "ok" 2>/dev/null)
+                    total=$(($passes + $fails))
+
                     # Look ahead and see if suite has a fail or not.
-                    if [ -n "${suite_failed}" ]; then
-                        printf '\t%s%s%s\n' "${RED}" "${line}" "${RESET}"
+                    if [ "${fails}" -ne 0 ]; then
+                        printf '\t%s%s [%s/%s]%s\n' "${RED}" "${line}" "${passes}" "${total}" "${RESET}"
                     else
-                        printf '\t%s%s%s\n' "${GREEN}" "${line}" "${RESET}"
+                        printf '\t%s%s [%s/%s]%s\n' "${GREEN}" "${line}" "${passes}" "${total}" "${RESET}"
                     fi
                     ;;
                 ok\ *)
                     printf '\t\t%s%s%s\n' "${GREEN}" "${line}" "${RESET}"
+                    info_buffer=""
                     ;;
                 not\ ok\ *)
+                    # Print failing test case.
                     printf '\t\t%s%s%s\n' "${RED}" "${line}" "${RESET}"
+
+                    # Because of literal backslashes mix with newlines, must first
+                    # print with %b then add format related newlines and tabs.
+                    printf '%b\n' "${info_buffer}" | while IFS= read -r info_line; do
+                        if [ -n "${info_line}" ]; then # Skip empty lines.
+                            printf '\t\t\t%s%s%s\n' "${RED}" "${info_line}" "${RESET}"
+                        fi
+                    done
+
+                    # Reset info buffer.
+                    info_buffer=""
+                    ;;
+                \[INFO\]\ *)
+                    info_buffer="${info_buffer}"'\n'"${line}"
                     ;;
                 \#\ SKIP* | \#\ skip*)
                     printf '\t\t%s%s%s\n' "${YELLOW}" "${line}" "${RESET}"
@@ -80,6 +105,12 @@ print_lines() {
     fi
 }
 
+#/**
+# * Collect all lines as the tests finish. This is required to add colloring to
+# * test cases based off fail/pass status. By collecting all the lines first
+# * modules and suite headers can now also be determined to be pass/fail by
+# * looking ahead in the buffer.
+# */
 collect_lines() {
     # Read TAP from stdin line-by-line.
     while IFS= read -r line; do
@@ -130,8 +161,13 @@ collect_lines() {
                 total=$((total + 1))
                 buffer="${buffer}"'\n'"${line}"
                 ;;
-            # Something else? Skip this line.
-            *) ;;
+            \[INFO\]\ *)
+                buffer="${buffer}"'\n'"${line}"
+                ;;
+            # Something else? do nothing.
+            *)
+                buffer="${buffer}"'\n'"${line}"
+                ;;
         esac
     done
 
@@ -139,24 +175,28 @@ collect_lines() {
     print_lines "${buffer}"
 }
 
+# Embedded AWK script that extracts only the passed suite from a buffer.
 extract_suite_from_buffer() {
     buffer="$1"
     target="$2"
 
     printf '%b\n' "${buffer}" | awk -v suite="${target}" '
-    # Start printing the target suite appears.
+    # Start printing when the target suite appears.
     $1 == "SUITE" && $2 == suite {
       inside = 1
       print
       next
     }
+
     # if printing and another SUITE or MODULE header appears, stop printing.
     inside && ($1 == "SUITE" || $1 == "MODULE") { exit }
+
     # while inside the suite, print lines
-    inside { print }
+    inside == 1 { print }
   '
 }
 
+# Prints out the summary of the tests.
 print_summary() {
     printf '\nSummary: %d total, %s%d passed%s, %s%d failed%s, %s%d skipped%s\n' \
         "${total}" \
