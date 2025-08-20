@@ -9,9 +9,9 @@
 # File: load_config_file_test.bats
 # License: GNU GPLv3
 
-#=====================================#
-# PSEUDO-CODE FUNCTION REPRESENTATION #
-#=====================================#
+#=====================#
+# FUNCTION UNDER TEST #
+#=====================#
 
 # function load_config_file(indent_size, indent_char,    _current_dir, _editorconfig_path, _configs_found, _root_found, _search_flag) {
 #     _current_dir = get_current_dir()
@@ -34,3 +34,47 @@
 #         }
 #     }
 # }
+
+#========#
+# SET UP #
+#========#
+
+# AWK script containing FUT
+script="editorconfig.awk"
+
+# Harness to call specific FUT
+harness="editorconfig.awk"
+
+# Color sourcing must live outside setup() to be available in current env.
+. "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
+
+# BATS helpers
+load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
+
+setup_file() {
+    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
+# Runs for each @test case
+setup() {
+    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+
+    export mocked_script
+
+    # Create mock for test suite.
+    mocked_script_path=$(mock_script "${script}:get_current_dir:_find_editorconfig:_parse_editorconfig:get_parent_directory")
+    mocked_script=$(basename -- "${mocked_script_path}")
+}
+
+teardown_file() {
+    echo "[END]${BATS_TEST_FILENAME##*/}" >&3
+}
+
+#============#
+# TEST CASES #
+#============#
+
+@test "[TEST] generate mock" {
+    return 0
+}

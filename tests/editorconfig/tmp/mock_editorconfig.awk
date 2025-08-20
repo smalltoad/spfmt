@@ -158,87 +158,6 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
 # *     falls on calling function to iterate with dirname to aggregate settings
 # *     across multiple non-root editorconfig files.
 # */
-function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_file_check, _is_file, _cmd_read_check, _is_readable, _result, _parent_dir)
-{
-    # Clear local variables in case they've been passed.
-    delete _curr_path
-    delete _cmd_file_check
-    delete _is_file
-    delete _cmd_read_check
-    delete _is_readable
-    delete _result
-    delete _parent_dir
-
-    _curr_path = start_dir
-
-    # Search up the directory tree until root is reached.
-    while (_curr_path != "/" && _curr_path != "") {
-        # Append "/.editorconfig" to current search path.
-        _file_path_to_check = _curr_path "/.editorconfig"
-
-        if (debug) {
-            print\
-                "[DEBUG] Checking for .editorconfig at: "\
-                    _file_path_to_check > "/dev/stderr"
-        }
-
-        # Does the path lead to a file?
-        _is_file = test_file(_file_path_to_check)
-
-        # Was there a .editorconfig file in the directory?
-        if (_is_file == 0) {
-            if (debug) {
-                print\
-                    "[DEBUG] Found .editorconfig at: "\
-                        _file_path_to_check > "/dev/stderr"
-            }
-
-            _is_readable = test_readable(_file_path_to_check)
-
-            if (debug) {
-                print\
-                    "[DEBUG] The .editorconfig is "\
-                        _is_readable\
-                        ? "readable."\
-                        : "un-readable." > "/dev/stderr"
-            }
-
-            # Is the file readable?
-            if (_is_readable == 0) {
-                # File exists, file is readable, now return!
-                if (debug) {
-                    print\
-                        "[DEBUG] Found readable .editorconfig at: "\
-                            _file_path_to_check > "/dev/stderr"
-                }
-
-                return _file_path_to_check
-
-            } else {
-                # File exists, but IS NOT readable?
-                if (debug) {
-                    print\
-                        "[DEBUG] Found UNREADABLE .editorconfig at: "\
-                            _file_path_to_check > "/dev/stderr"
-                }
-            }
-        }
-
-        # No match in _curr_path !
-        # Move up one directory from original start_dir and keep looking.
-        _parent_dir = get_parent_directory(start_dir)
-
-        if (_parent_dir == start_dir) {
-            # We've reached the root or can't go further.
-            return ""
-        }
-
-        _curr_path = _parent_dir
-    }
-
-    # No .editorconfig found, return empty string.
-    return ""
-}
 
 # ================= #
 # PARSING FUNCTIONS #
@@ -252,14 +171,14 @@ function _is_root_config(config_file, line, found_root) {
     # Read through the entire file looking for root = true
     while ((getline line < config_file) > 0) {
         # Remove leading/trailing whitespace
-        strip_leading_whitespace(line)
-        strip_trailing_whitespace(line)
+        gsub(/^[ \t]+/, "", line)    # Strip leading spaces and tabs
+        gsub(/[ \t]+$/, "", line)    # Strip trailing spaces and tabs
 
         # Skip empty lines and comments
         if (line == "" || line ~ /^#/) { continue }
 
         # Remove inline comments
-        strip_inline_comment(line)
+        sub(/#.*$/, "", line)
 
         # Stop processing at a section header
         # root = true MUST BE AT TOP LEVEL
@@ -278,67 +197,6 @@ function _is_root_config(config_file, line, found_root) {
 }
 
 # Parse .editorconfig file and extract relevant settings
-function _parse_editorconfig(config_file, line, section, in_shell_section, key, value) {
-    if (debug) {
-        print "[DEBUG] Parsing .editorconfig file: " config_file > "/dev/stderr"
-    }
-
-    section = ""
-    in_shell_section = 0
-
-    # Read the config file line by line
-    while ((getline line < config_file) > 0) {
-        # Remove leading/trailing whitespace
-        gsub(/^[ \t]+/, "", line)    # Strip leading spaces and tabs
-        gsub(/[ \t]+$/, "", line)    # Strip trailing spaces and tabs
-
-        # Skip empty lines and comments
-        if (line == "" || line ~ /^[#;]/) {
-            continue
-        }
-
-        # Check for section headers [section]
-        if (line ~ /^\[.*\]$/) {
-            section = line
-            gsub(/^\[|\]$/, "", section)  # Remove brackets
-
-            if (debug) {
-                print "[DEBUG] Found section: [" section "]" > "/dev/stderr"
-            }
-
-            # Check if this section applies to shell files
-            in_shell_section = section_matches_shell_files(section)
-
-            if (debug && in_shell_section) {
-                print "[DEBUG] Section matches shell files" > "/dev/stderr"
-            }
-
-            continue
-        }
-
-        # Parse key=value pairs
-        if (line ~ /=/ && in_shell_section) {
-            # Split on first equals sign
-            key = line
-            value = line
-
-            sub(/=.*$/, "", key)    # Remove everything after first =
-            sub(/^[^=]*=/, "", value)  # Remove everything before first =
-
-            gsub(/^\[/, "", section)  # Remove opening bracket
-            gsub(/\]$/, "", section)  # Remove closing bracket
-
-            if (debug) {
-                print "[DEBUG] Found property: " key " = " value > "/dev/stderr"
-            }
-
-            # Apply the configuration
-            apply_config_property(key, value)
-        }
-    }
-
-    close(config_file)
-}
 
 # ================== #
 # UTILITIY FUNCTIONS #
@@ -346,22 +204,5 @@ function _parse_editorconfig(config_file, line, section, in_shell_section, key, 
 
 # Gets the absoulte path of the current working directory from the process environments variables.
 # Falls back to "." if pwd is unavailable or not a real directory on the system.
-function get_current_dir(current_dir) {
-    current_dir = ENVIRON["PWD"]
-
-    # "If current directory is not set OR the directory is not real."
-    if (!current_dir || !test_directory(current_dir)) { current_dir = "." }
-
-    return current_dir
-}
 
 # Get parent directory of given path.
-function get_parent_directory(path,    cmd, _result) {
-    # Run dirname on current path
-    cmd = "dirname \"" path "\""
-    # Pipe output of subshell into _result
-    cmd | getline _result
-    close(cmd)
-
-    return _result
-}

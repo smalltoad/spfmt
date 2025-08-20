@@ -13,8 +13,13 @@ SHELL := /bin/sh
 PROGRAM_NAME := spfmt
 VERSION := 0.1.0
 
-# Source files in dependency order.
-SOURCES := spfmt.awk parse.awk editorconfig.awk
+#/**
+# * Source files in dependency order.
+# *
+# * Note that updates here are prefered over including everything in the /src
+# * folder in order to enforce dependency order.
+# */
+SOURCES := spfmt.awk parse.awk editorconfig.awk file_utils.awk
 PREPARED_SOURCES = $(addprefix $(SRC_DIR)/, $(SOURCES))
 
 # Output files.
@@ -118,17 +123,16 @@ show-env:
 	@echo "    AWK_OPTIONS: $(AWK_OPTIONS)"
 	@echo ""
 
-# Print what files would be included in final distributable.
+# Print what files would be included in final distributable via a make install.
 show-sources:
 	@echo "=== REGISTERED SOURCE FILES ==="
 	@for src in $(PREPARED_SOURCES); do echo "    $$src"; done
 
 #/**
-# * Runs all tests in the /tests folder
-# * To run an individual test file:
-# *     ./tests/parse/fut/strip_trailing_whitespace_test.bats
-# * To run an individual test file with INFO turned on:
-# *     INFO=1 ./tests/parse/fut/strip_trailing_whitespace_test.bats
+# * Runs all BATS tests in the /tests folder.
+# *
+# * Note that other parameters can be passed at the commandline.
+# *    Example: $ make test INTO=1
 # */
 test:
 	@echo "Running tests with configuration:"

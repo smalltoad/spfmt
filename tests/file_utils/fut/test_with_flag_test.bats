@@ -51,8 +51,6 @@ setup_file() {
     # Create mock for test suite.
     mocked_script_path=$(mock_script "${script}:_value_of_flag")
     mocked_script=$(basename -- "${mocked_script_path}")
-
-    echo "${mocked_script}" >&3
 }
 
 teardown_file() {

@@ -8,6 +8,7 @@
 BEGIN {
     leading_whitespace = "^[ \t]+"
     trailing_whitespace = "[ \t]+$"
+    inline_comment = "/#.*$/"
 }
 
 function strip_leading_whitespace(line) {
@@ -17,5 +18,10 @@ function strip_leading_whitespace(line) {
 
 function strip_trailing_whitespace(line) {
     sub(trailing_whitespace, "", line)
+    return line
+}
+
+function strip_inline_comment(line) {
+    sub(inline_comment, "", line)
     return line
 }

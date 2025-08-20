@@ -59,10 +59,10 @@ print_lines() {
                 SUITE\ *)
                     # Grab suite text using embedded AWK script.
                     suite_text=$(extract_suite_from_buffer "${buffer}" "${line##SUITE }")
-                    # Determine if the suite failed.
+                    # Determine number of passes, fails and get the total test count.
                     fails=$(echo "${suite_text}" | grep -cE "not ok" 2>/dev/null)
                     passes=$(echo "${suite_text}" | grep -cE "ok" 2>/dev/null)
-                    total=$(($passes + $fails))
+                    total=$((passes + fails))
 
                     # Look ahead and see if suite has a fail or not.
                     if [ "${fails}" -ne 0 ]; then
@@ -133,7 +133,7 @@ collect_lines() {
                     print_lines "${buffer}"
 
                     # Now that the buffer has been printed and cleared, restart.
-                    buffer="MODULE ${suite}"
+                    buffer="MODULE src/${suite}"
                     # Register in known suites, next time this case is hit the
                     # buffer will get printed.
                     known_suites="${known_suites} ${suite}"

@@ -10,6 +10,7 @@
 # License: GNU GPLv3
 
 BEGIN {
+    # Get command line arguments
     getline args < "/dev/stdin"
 
     argc = split(args, argv, ":")

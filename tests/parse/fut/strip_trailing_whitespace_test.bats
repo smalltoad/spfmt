@@ -1,8 +1,21 @@
 #!/usr/bin/env bats
-
+#  ___  __ _____   ____| | | |_ ___   ____  __| |
+# / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
+# \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
+# |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
+#
+# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
+# Description: BATS tests for the strip_leading_whitespace function in the parse.awk module.
 # File: strip_leading_whitespace_test.bats
-# Desc: BATS tests for the strip_leading_whitespace function in the parse.awk module.
-# Author: Joseph Mowery <mowery.joseph@outlook.com>
+# License: GNU GPLv3
+#
+# Comandline execution examples:
+#     $ bats strip_trailing_whitespace_test.bats
+#     $ ./tests/parse/fut/strip_trailing_whitespace_test.bats
+# With INFO turned on:
+#     $ INFO=1 ./tests/parse/fut/strip_trailing_whitespace_test.bats
+# With TAP compliant output:
+#     $ bats strip_trailing_whitespace_test.bats --tap
 
 #=====================#
 # FUNCTION UNDER TEST #
