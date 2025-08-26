@@ -91,7 +91,7 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
             }
 
             # Is the file we found root? Return of 1 indicates non-root file.
-            if (_check_is_root(_editorconfig_path) == 1) {
+            if (_is_root_config(_editorconfig_path) == 1) {
                 # Move up a directory before iterating again.
                 _current_dir = get_parent_directory()
             } else {
@@ -160,15 +160,6 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
 # */
 function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_file_check, _is_file, _cmd_read_check, _is_readable, _result, _parent_dir)
 {
-    # Clear local variables in case they've been passed.
-    delete _curr_path
-    delete _cmd_file_check
-    delete _is_file
-    delete _cmd_read_check
-    delete _is_readable
-    delete _result
-    delete _parent_dir
-
     _curr_path = start_dir
 
     # Search up the directory tree until root is reached.
@@ -240,103 +231,122 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
     return ""
 }
 
-# ================= #
+#===================#
 # PARSING FUNCTIONS #
-# ================= #
+#===================#
 
 # Check if .editorconfig file has root = true
-function _is_root_config(config_file, line, found_root) {
-    # Flag for root found
-    found_root = 0
+function _is_root_config(config_file,    line, found_root) {
+    found_root = 1
 
-    # Read through the entire file looking for root = true
+    if(config_file ~ /^[ \t]*$/) {
+        if (debug) {
+            print "[DEBUG] Early exit, no parameter passed."
+        }
+        return found_root
+    }
+
+    # Read through the entire file looking for root = true.
     while ((getline line < config_file) > 0) {
-        # Remove leading/trailing whitespace
+        # Remove leading/trailing whitespace.
         strip_leading_whitespace(line)
         strip_trailing_whitespace(line)
 
-        # Skip empty lines and comments
+        # Skip empty lines and full line comments.
         if (line == "" || line ~ /^#/) { continue }
 
-        # Remove inline comments
+        # Remove inline comments.
         strip_inline_comment(line)
 
-        # Stop processing at a section header
-        # root = true MUST BE AT TOP LEVEL
-        if (line ~ /^\[.*\]$/) { break }
+        # Is the line a ini header block?
+        if (line ~ /^\[.*\]$/) { continue }
 
-        # Look for root = true (case insensitive)
-        # This pattern handles various whitespace scenarios around the equals sign
+        # Finally, is the line 'root = true'?
         if (tolower(line) ~ /^root[ \t]*=[ \t]*true[ \t]*$/) {
-            found_root = 1
-            break # Found final config file, early exit
+            found_root = 0
+            if (debug) {
+                print "[DEBUG] Root .editorconfig file found."
+            }
+            break
         }
     }
 
-    close(config_file) # Always close the file handle
+    close(config_file)
     return found_root
 }
 
-# Parse .editorconfig file and extract relevant settings
-function _parse_editorconfig(config_file, line, section, in_shell_section, key, value) {
+#/**
+# * [DESCRIPTION]
+# * Parses the .editorconfig file. DOES NOT RETURN. instead, modifies the
+# * variables indent_size/char so that a side effect of this function is that
+# * those variables will house the return.
+# *
+# * @param config_file {passed}
+# *     Path to open, note that by this point this path should have been
+# *     verified real and readable.
+# */
+function _parse_editorconfig(config_file,    line, in_section) {
+    if(config_file ~ /^[ \t]*$/) {
+        if (debug) {
+            print "[DEBUG] Early exit, no parameter passed."
+        }
+        return 1
+    }
+
     if (debug) {
-        print "[DEBUG] Parsing .editorconfig file: " config_file > "/dev/stderr"
+        print "[DEBUG] Parsing .editorconfig file at: " config_file
     }
 
-    section = ""
-    in_shell_section = 0
+    # 1 is false for in section
+    in_section = 1
 
-    # Read the config file line by line
+    # Read the config file line by line.
     while ((getline line < config_file) > 0) {
-        # Remove leading/trailing whitespace
-        gsub(/^[ \t]+/, "", line)    # Strip leading spaces and tabs
-        gsub(/[ \t]+$/, "", line)    # Strip trailing spaces and tabs
+        # Remove leading/trailing whitespace.
+        strip_leading_whitespace(line)
+        strip_trailing_whitespace(line)
 
-        # Skip empty lines and comments
-        if (line == "" || line ~ /^[#;]/) {
-            continue
-        }
+        # Skip empty lines and full line comments.
+        if (line == "" || line ~ /^#/) { continue }
 
-        # Check for section headers [section]
+        # Check for [section] headers.
         if (line ~ /^\[.*\]$/) {
-            section = line
-            gsub(/^\[|\]$/, "", section)  # Remove brackets
+            gsub(/^\[|\]$/, "", line)  # Remove brackets
 
-            if (debug) {
-                print "[DEBUG] Found section: [" section "]" > "/dev/stderr"
-            }
-
-            # Check if this section applies to shell files
-            in_shell_section = section_matches_shell_files(section)
-
-            if (debug && in_shell_section) {
-                print "[DEBUG] Section matches shell files" > "/dev/stderr"
+            if (line == "awk" || line == "spfmt") {
+                if (debug) {
+                    print "[DEBUG] Found awk/spfmt section."
+                }
+                in_section = 0
+            # If in a section block and in_section is 1, awk/spfmt settings are over.
+            } else if (in_section == 0){
+                break
             }
 
             continue
         }
 
-        # Parse key=value pairs
-        if (line ~ /=/ && in_shell_section) {
-            # Split on first equals sign
-            key = line
-            value = line
-
-            sub(/=.*$/, "", key)    # Remove everything after first =
-            sub(/^[^=]*=/, "", value)  # Remove everything before first =
-
-            gsub(/^\[/, "", section)  # Remove opening bracket
-            gsub(/\]$/, "", section)  # Remove closing bracket
-
-            if (debug) {
-                print "[DEBUG] Found property: " key " = " value > "/dev/stderr"
+        # Parse "key = value" pairs
+        if (in_section == 0) {
+            if (line ~ /^indent_size[ \t]*=/) {
+                sub(/^indent_size[ \t]*=[ \t]*/, "", line)
+                indent_size = line
+                if (debug) {
+                    print "[DEBUG] Set indent size as " indent_size
+                }
+                continue
             }
 
-            # Apply the configuration
-            apply_config_property(key, value)
+            if (line ~ /^indent_char[ \t]*=/) {
+                sub(/^indent_char[ \t]*=[ \t]*/, "", line)
+                indent_char = line
+                if (debug) {
+                    print "[DEBUG] Set indent char as " indent_size
+                }
+                continue
+            }
         }
     }
-
     close(config_file)
 }
 

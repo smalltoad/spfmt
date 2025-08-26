@@ -91,7 +91,7 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
             }
 
             # Is the file we found root? Return of 1 indicates non-root file.
-            if (_check_is_root(_editorconfig_path) == 1) {
+            if (_is_root_config(_editorconfig_path) == 1) {
                 # Move up a directory before iterating again.
                 _current_dir = get_parent_directory()
             } else {
@@ -158,45 +158,197 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
 # *     falls on calling function to iterate with dirname to aggregate settings
 # *     across multiple non-root editorconfig files.
 # */
+function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_file_check, _is_file, _cmd_read_check, _is_readable, _result, _parent_dir)
+{
+    _curr_path = start_dir
 
-# ================= #
+    # Search up the directory tree until root is reached.
+    while (_curr_path != "/" && _curr_path != "") {
+        # Append "/.editorconfig" to current search path.
+        _file_path_to_check = _curr_path "/.editorconfig"
+
+        if (debug) {
+            print\
+                "[DEBUG] Checking for .editorconfig at: "\
+                    _file_path_to_check > "/dev/stderr"
+        }
+
+        # Does the path lead to a file?
+        _is_file = test_file(_file_path_to_check)
+
+        # Was there a .editorconfig file in the directory?
+        if (_is_file == 0) {
+            if (debug) {
+                print\
+                    "[DEBUG] Found .editorconfig at: "\
+                        _file_path_to_check > "/dev/stderr"
+            }
+
+            _is_readable = test_readable(_file_path_to_check)
+
+            if (debug) {
+                print\
+                    "[DEBUG] The .editorconfig is "\
+                        _is_readable\
+                        ? "readable."\
+                        : "un-readable." > "/dev/stderr"
+            }
+
+            # Is the file readable?
+            if (_is_readable == 0) {
+                # File exists, file is readable, now return!
+                if (debug) {
+                    print\
+                        "[DEBUG] Found readable .editorconfig at: "\
+                            _file_path_to_check > "/dev/stderr"
+                }
+
+                return _file_path_to_check
+
+            } else {
+                # File exists, but IS NOT readable?
+                if (debug) {
+                    print\
+                        "[DEBUG] Found UNREADABLE .editorconfig at: "\
+                            _file_path_to_check > "/dev/stderr"
+                }
+            }
+        }
+
+        # No match in _curr_path !
+        # Move up one directory from original start_dir and keep looking.
+        _parent_dir = get_parent_directory(start_dir)
+
+        if (_parent_dir == start_dir) {
+            # We've reached the root or can't go further.
+            return ""
+        }
+
+        _curr_path = _parent_dir
+    }
+
+    # No .editorconfig found, return empty string.
+    return ""
+}
+
+#===================#
 # PARSING FUNCTIONS #
-# ================= #
+#===================#
 
 # Check if .editorconfig file has root = true
-function _is_root_config(config_file, line, found_root) {
-    # Flag for root found
-    found_root = 0
+function _is_root_config(config_file,    line, found_root) {
+    found_root = 1
 
-    # Read through the entire file looking for root = true
+    if(config_file ~ /^[ \t]*$/) {
+        if (debug) {
+            print "[DEBUG] Early exit, no parameter passed."
+        }
+        return found_root
+    }
+
+    # Read through the entire file looking for root = true.
     while ((getline line < config_file) > 0) {
-        # Remove leading/trailing whitespace
-        gsub(/^[ \t]+/, "", line)    # Strip leading spaces and tabs
-        gsub(/[ \t]+$/, "", line)    # Strip trailing spaces and tabs
+        # Remove leading/trailing whitespace.
+        strip_leading_whitespace(line)
+        strip_trailing_whitespace(line)
 
-        # Skip empty lines and comments
+        # Skip empty lines and full line comments.
         if (line == "" || line ~ /^#/) { continue }
 
-        # Remove inline comments
-        sub(/#.*$/, "", line)
+        # Remove inline comments.
+        strip_inline_comment(line)
 
-        # Stop processing at a section header
-        # root = true MUST BE AT TOP LEVEL
-        if (line ~ /^\[.*\]$/) { break }
+        # Is the line a ini header block?
+        if (line ~ /^\[.*\]$/) { continue }
 
-        # Look for root = true (case insensitive)
-        # This pattern handles various whitespace scenarios around the equals sign
+        # Finally, is the line 'root = true'?
         if (tolower(line) ~ /^root[ \t]*=[ \t]*true[ \t]*$/) {
-            found_root = 1
-            break # Found final config file, early exit
+            found_root = 0
+            if (debug) {
+                print "[DEBUG] Root .editorconfig file found."
+            }
+            break
         }
     }
 
-    close(config_file) # Always close the file handle
+    close(config_file)
     return found_root
 }
 
-# Parse .editorconfig file and extract relevant settings
+#/**
+# * [DESCRIPTION]
+# * Parses the .editorconfig file. DOES NOT RETURN. instead, modifies the
+# * variables indent_size/char so that a side effect of this function is that
+# * those variables will house the return.
+# *
+# * @param config_file {passed}
+# *     Path to open, note that by this point this path should have been
+# *     verified real and readable.
+# */
+function _parse_editorconfig(config_file,    line, in_section) {
+    if(config_file ~ /^[ \t]*$/) {
+        if (debug) {
+            print "[DEBUG] Early exit, no parameter passed."
+        }
+        return 1
+    }
+
+    if (debug) {
+        print "[DEBUG] Parsing .editorconfig file at: " config_file
+    }
+
+    # 1 is false for in section
+    in_section = 1
+
+    # Read the config file line by line.
+    while ((getline line < config_file) > 0) {
+        # Remove leading/trailing whitespace.
+        strip_leading_whitespace(line)
+        strip_trailing_whitespace(line)
+
+        # Skip empty lines and full line comments.
+        if (line == "" || line ~ /^#/) { continue }
+
+        # Check for [section] headers.
+        if (line ~ /^\[.*\]$/) {
+            gsub(/^\[|\]$/, "", line)  # Remove brackets
+
+            if (line == "awk" || line == "spfmt") {
+                if (debug) {
+                    print "[DEBUG] Found awk/spfmt section."
+                }
+                in_section = 0
+            # If in a section block and in_section is 1, awk/spfmt settings are over.
+            } else if (in_section == 0){
+                break
+            }
+
+            continue
+        }
+
+        # Parse "key = value" pairs
+        if (in_section == 0) {
+            if (line ~ /^indent_size[ \t]*=/) {
+                sub(/^indent_size[ \t]*=[ \t]*/, "", line)
+                indent_size = line
+                if (debug) {
+                    print "[DEBUG] Set indent size as " indent_size
+                }
+                continue
+            }
+
+            if (line ~ /^indent_char[ \t]*=/) {
+                sub(/^indent_char[ \t]*=[ \t]*/, "", line)
+                indent_char = line
+                if (debug) {
+                    print "[DEBUG] Set indent char as " indent_size
+                }
+                continue
+            }
+        }
+    }
+    close(config_file)
+}
 
 # ================== #
 # UTILITIY FUNCTIONS #
@@ -204,5 +356,13 @@ function _is_root_config(config_file, line, found_root) {
 
 # Gets the absoulte path of the current working directory from the process environments variables.
 # Falls back to "." if pwd is unavailable or not a real directory on the system.
+function get_current_dir(current_dir) {
+    current_dir = ENVIRON["PWD"]
+
+    # "If current directory is not set OR the directory is not real."
+    if (!current_dir || !test_directory(current_dir)) { current_dir = "." }
+
+    return current_dir
+}
 
 # Get parent directory of given path.

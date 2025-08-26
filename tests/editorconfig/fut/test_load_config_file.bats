@@ -43,7 +43,7 @@
 script="editorconfig.awk"
 
 # Harness to call specific FUT
-harness="editorconfig.awk"
+harness="load_config_file_harness.awk"
 
 # Color sourcing must live outside setup() to be available in current env.
 . "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
@@ -58,8 +58,6 @@ setup_file() {
 
 # Runs for each @test case
 setup() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
-
     export mocked_script
 
     # Create mock for test suite.

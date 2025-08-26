@@ -1,8 +1,13 @@
 #!/usr/bin/awk -f
-# File: spfmt.awk
+#  ___  __ _____   ____| | | |_ ___   ____  __| |
+# / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
+# \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
+# |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
+#
+# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
 # Description: POSIX-compliant AWK script to format ShellSpec test files.
-# Author: Joseph Mowery <mowery.joseph@outlook.com>
-# Usage: awk -f spfmt.awk input_file.sh
+# File: spfmt.awk
+# License: GNU GPLv3
 
 BEGIN {
     # ======================= #
@@ -14,6 +19,7 @@ BEGIN {
     VERSION = "1.0.0"
 
     # Default configuration variables, overriddable via .editorconfig or CLI.
+    # NOTE: In editorconfig.awk these get modified directly based on name.
     indent_size = 4
     indent_char = " "
 

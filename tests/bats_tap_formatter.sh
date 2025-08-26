@@ -60,8 +60,8 @@ print_lines() {
                     # Grab suite text using embedded AWK script.
                     suite_text=$(extract_suite_from_buffer "${buffer}" "${line##SUITE }")
                     # Determine number of passes, fails and get the total test count.
-                    fails=$(echo "${suite_text}" | grep -cE "not ok" 2>/dev/null)
-                    passes=$(echo "${suite_text}" | grep -cE "ok" 2>/dev/null)
+                    fails=$(echo "${suite_text}" | grep -cE "^not ok " 2>/dev/null)
+                    passes=$(echo "${suite_text}" | grep -cE "^ok " 2>/dev/null)
                     total=$((passes + fails))
 
                     # Look ahead and see if suite has a fail or not.

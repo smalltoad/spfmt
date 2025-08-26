@@ -1,6 +1,13 @@
+#!/usr/bin/env bats
+#  ___  __ _____   ____| | | |_ ___   ____  __| |
+# / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
+# \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
+# |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
+#
+# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
+# Description: Build and installation automation for spfmt (ShellSpec Formatter).
 # File: Makefile
-# Desc: Build and installation automation for spfmt (ShellSpec Formatter).
-# Author: Joseph Mowery <mowery.joseph@outlook.com>
+# License: GNU GPLv3
 
 # Includes env file which exports configuration variables.
 -include project_env.mk
