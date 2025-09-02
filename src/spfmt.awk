@@ -44,16 +44,16 @@ BEGIN {
     parse_arguments()
 
     # Immediately after parsing, check for debug mode first.
-    if (debug) { print "[DEBUG] Debug mode enabled." > "/dev/stderr" }
+    if (debug) { print "[DEBUG] Debug mode enabled." }
 
     # Handle help and version options first, then exit.
     if (show_help) {
         if (debug) {
-            print "[DEBUG] Help requested." > "/dev/stderr"
+            print "[DEBUG] Help requested."
 
             if (defaults_overriden != 0 || file_count > 0) {
                 print\
-                    "[DEBUG] CLI options were provided, but help option takes preceedence." > "/dev/stderr"
+                    "[DEBUG] CLI options were provided, but help option takes preceedence."
             }
         }
 
@@ -61,11 +61,11 @@ BEGIN {
     }
     else if (show_version) {
         if (debug) {
-            print "[DEBUG] Version requested." > "/dev/stderr"
+            print "[DEBUG] Version requested."
 
             if (defaults_overriden != 0 || file_count > 0) {
                 print\
-                    "[DEBUG] CLI options were provided, but version option takes preceedence." > "/dev/stderr"
+                    "[DEBUG] CLI options were provided, but version option takes preceedence."
             }
         }
 
@@ -75,14 +75,14 @@ BEGIN {
     # CLI modifications will take preference over config file.
     if (defaults_overriden == 0) {
         if (debug) {
-            print "[DEBUG] No CLI formatting options found." > "/dev/stderr"
-            print "[DEBUG] Searching for .editorconfig file." > "/dev/stderr"
+            print "[DEBUG] No CLI formatting options found."
+            print "[DEBUG] Searching for .editorconfig file."
         }
 
         load_config_file()
     }
 
-    # Print final settings for formatting
+    # Print final settings for formatting.
     if (debug) {
         print "[DEBUG] Final formatting settings"
         print "[DEBUG] indent size:"
@@ -94,23 +94,23 @@ BEGIN {
     # PROCESS FILES #
     # ============= #
 
-    # If no files specified, process stdin
+    # If no files specified, process stdin.
     if (file_count == 0) {
         if (debug) {
-            print "[DEBUG] No files found from CLI." > "/dev/stderr"
-            print "[DEBUG] Processing from stdin instead..." > "/dev/stderr"
+            print "[DEBUG] No files found from CLI."
+            print "[DEBUG] Processing from stdin instead..."
         }
 
         process_input()
     }
     else {
-        # Process each file from CLI
+        # Process each file from CLI.
         process_files()
     }
 }
 
 # Parse command line arguments using ARGC/ARGV
-function parse_arguments(i, arg) {
+function parse_arguments(    i, arg) {
     for (i = 1; i < ARGC; i++) {
         arg = ARGV[i]
 
@@ -141,7 +141,7 @@ function parse_arguments(i, arg) {
             }
             else {
                 print\
-                    "[ERROR] -s|--indent-size requires a positive integer" > "/dev/stderr"
+                    "[ERROR] -s|--indent-size requires a positive integer"
                 exit 2
             }
         }
@@ -155,13 +155,13 @@ function parse_arguments(i, arg) {
             }
             else {
                 print\
-                    "[ERROR] -c|--indent-char requires a character" > "/dev/stderr"
+                    "[ERROR] -c|--indent-char requires a character"
                 exit 2
             }
         }
         else if (arg ~ /^-/) {
-            printf("Error: Unknown option: %s\n", arg > "/dev/stderr")
-            print "Use --help for usage information" > "/dev/stderr"
+            printf("Error: Unknown option: %s\n", arg)
+            print "Use --help for usage information"
             exit 2
         }
         else {
@@ -184,7 +184,7 @@ function parse_arguments(i, arg) {
     current_level = (current_level > 0) ? current_level - 1 : 0
 
     if (debug) {
-        printf("# End found, level now %d\n", current_level > "/dev/stderr")
+        printf("# End found, level now %d\n", current_level)
     }
 
     printf("%s%s\n", create_indent(current_level), trim_line($0))

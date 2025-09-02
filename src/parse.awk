@@ -1,27 +1,25 @@
 #!/usr/bin/awk -f
-
+#  ___  __ _____   ____| | | |_ ___   ____  __| |
+# / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
+# \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
+# |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
+#
+# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
+# Description: POSIX-compliant AWK script to provide common parsing functionality.
 # File: parse.awk
-# Description: POSIX-compliant AWK script to provide common pasing functionality.
-# Author: Joseph Mowery <mowery.joseph@outlook.com>
-# Usage: awk -f spfmt.awk -f parse.awk input_file.sh
-
-BEGIN {
-    leading_whitespace = "^[ \t]+"
-    trailing_whitespace = "[ \t]+$"
-    inline_comment = "/#.*$/"
-}
+# License: GNU GPLv3
 
 function strip_leading_whitespace(line) {
-    sub(leading_whitespace, "", line)
+    sub("^[ \t]+", "", line)
     return line
 }
 
 function strip_trailing_whitespace(line) {
-    sub(trailing_whitespace, "", line)
+    sub("[ \t]+$", "", line)
     return line
 }
 
 function strip_inline_comment(line) {
-    sub(inline_comment, "", line)
+    sub("/#.*$/", "", line)
     return line
 }

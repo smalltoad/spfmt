@@ -36,6 +36,7 @@ assert_builder() {
     harnesses=""              # Harness for testing AWK FUT.
     output=""                 # Output file for stdout redirection.
     expected=""               # Expected return of AWK to compare to.
+    direct=""                 # Directly append arguments.
 
     # Known locations.
     scripts_location="${BATS_TEST_DIRNAME}/../../../src/"
@@ -47,7 +48,7 @@ assert_builder() {
     # Reset OPTIND to ensure clean argument parsing.
     OPTIND=1
 
-    while getopts "f:h:m:e:i:o:x:v:" opt; do
+    while getopts "f:h:m:e:i:o:x:v:s:" opt; do
         case "${opt}" in
         f)
             # Add file to end of command.
@@ -104,6 +105,9 @@ assert_builder() {
                 fi
             done
             ;;
+        s)
+            direct="${direct} ${OPTARG}"
+            ;;
         \?)
             printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
             ;;
@@ -114,8 +118,8 @@ assert_builder() {
         esac
     done
 
-    concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${output}"
-    echo "${concat_command}" >&3
+    concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
+
     run bash -c "${concat_command}"
 
     if [[ "${INFO}" -eq 1 ]]; then
@@ -146,7 +150,7 @@ mock_script() {
     targets=${arguments#*:}
 
     script_path="${BATS_TEST_DIRNAME}/../../../src/${script_name}"
-    # Append parent PID to separate mocks in a suite.
+    # Append  PID to separate mocks in a test suite.
     mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}.$$"
 
     touch "${mock_path}"
@@ -155,7 +159,17 @@ mock_script() {
 
     while :; do
         fn=${targets%%:*}
-        sed_command+=" -e '/^function ${fn}/,/^}$/d'"
+
+        if [[ "${fn}" = "BEGIN" ]]; then
+            sed_command+=" -e '/^${fn} /,/^}$/d'"
+        elif [[ "${fn}" = "REGEX" ]]; then
+            sed_command+=" -e '/^\/\^/,/^}$/d'"
+        elif [[ "${fn}" = "{}" ]]; then
+            sed_command+=" -e '/^{/,/^}$/d'"
+        else
+            sed_command+=" -e '/^function ${fn}/,/^}$/d'"
+        fi
+
         remaining=${targets#*:}
 
         [[ "${remaining}" = "${targets}" ]] && break
