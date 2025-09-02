@@ -36,15 +36,8 @@
 # *     .editorconfig file or an empty string. In the event of an empty string
 # *     spfmt resorts to fallbacks in its own file.
 # */
-function load_config_file(indent_size, indent_char,    _current_dir, _editorconfig_path, _configs_found, _root_found, _search_flag)
+function load_config_file(    _current_dir, _editorconfig_path, _configs_found, _root_found, _search_flag)
 {
-    # Clear local variables in case they've been passed.
-    delete _current_dir
-    delete _editorconfig_path
-    delete _configs_found
-    delete _root_found
-    delete _search_flag
-
     # Search parameters
     _current_dir = get_current_dir()
     _search_flag = 1
@@ -58,7 +51,7 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
 
     # Walks up the directory structure from current working directory.
     # Looks for a .editorConfig file at each directory level, then will
-    # parse out any expected settings.
+    # return the found file path.
     while (_search_flag) {
         # Attempt to find a .editorconfig file by crawling up the filesystem.
         _editorconfig_path = _find_editorconfig(_current_dir)
@@ -71,8 +64,8 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
                 print "[DEBUG] Found .editorconfig at: " _editorconfig_path
             }
 
-            # Parse the located .editorconfig file.
-            _parse_editorconfig(_editorconfig_path, indent_size, indent_char)
+            # Parse the located .editorconfig file for indent size and char.
+            _parse_editorconfig(_editorconfig_path)
 
             if (debug) {
                 if (indent_char) {
@@ -135,7 +128,7 @@ function load_config_file(indent_size, indent_char,    _current_dir, _editorconf
 
 #/**
 # * Manages the functions required to crawl up the directory structure,
-# * determine if the root .editorconfig file has been found and will call parse
+# * determines if the root .editorconfig file has been found and will call parse
 # * on found .editorconfig files.
 # *
 # * @param start_dir {passed}
@@ -170,7 +163,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
         if (debug) {
             print\
                 "[DEBUG] Checking for .editorconfig at: "\
-                    _file_path_to_check > "/dev/stderr"
+                    _file_path_to_check
         }
 
         # Does the path lead to a file?
@@ -181,7 +174,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
             if (debug) {
                 print\
                     "[DEBUG] Found .editorconfig at: "\
-                        _file_path_to_check > "/dev/stderr"
+                        _file_path_to_check
             }
 
             _is_readable = test_readable(_file_path_to_check)
@@ -191,7 +184,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
                     "[DEBUG] The .editorconfig is "\
                         _is_readable\
                         ? "readable."\
-                        : "un-readable." > "/dev/stderr"
+                        : "un-readable."
             }
 
             # Is the file readable?
@@ -200,7 +193,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
                 if (debug) {
                     print\
                         "[DEBUG] Found readable .editorconfig at: "\
-                            _file_path_to_check > "/dev/stderr"
+                            _file_path_to_check
                 }
 
                 return _file_path_to_check
@@ -210,14 +203,26 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
                 if (debug) {
                     print\
                         "[DEBUG] Found UNREADABLE .editorconfig at: "\
-                            _file_path_to_check > "/dev/stderr"
+                            _file_path_to_check
                 }
             }
         }
 
+        if (debug) {
+            print\
+                "[DEBUG] No .editorconfig file found at: "\
+                    _file_path_to_check
+        }
+
         # No match in _curr_path !
         # Move up one directory from original start_dir and keep looking.
-        _parent_dir = get_parent_directory(start_dir)
+        _parent_dir = get_parent_directory(_curr_path)
+
+        if (debug) {
+            print\
+                "[DEBUG] Stepping up a directory: "\
+                    _parent_dir
+        }
 
         if (_parent_dir == start_dir) {
             # We've reached the root or can't go further.
@@ -326,24 +331,32 @@ function _parse_editorconfig(config_file,    line, in_section) {
             continue
         }
 
-        # Parse "key = value" pairs
+        #/**
+        # * Parse "key = value" pairs, if indent/char are already set assume that
+        # * they were set from an earlier config file that was not root, and this
+        # * is an additional file found on the file system.
+        # */
         if (in_section == 0) {
-            if (line ~ /^indent_size[ \t]*=/) {
-                sub(/^indent_size[ \t]*=[ \t]*/, "", line)
-                indent_size = line
-                if (debug) {
-                    print "[DEBUG] Set indent size as " indent_size
+            if(!indent_size) {
+                if (line ~ /^indent_size[ \t]*=/) {
+                    sub(/^indent_size[ \t]*=[ \t]*/, "", line)
+                    indent_size = line
+                    if (debug) {
+                        print "[DEBUG] Set indent size as " indent_size
+                    }
+                    continue
                 }
-                continue
             }
 
-            if (line ~ /^indent_char[ \t]*=/) {
-                sub(/^indent_char[ \t]*=[ \t]*/, "", line)
-                indent_char = line
-                if (debug) {
-                    print "[DEBUG] Set indent char as " indent_size
+            if(!indent_char) {
+                if (line ~ /^indent_char[ \t]*=/) {
+                    sub(/^indent_char[ \t]*=[ \t]*/, "", line)
+                    indent_char = line
+                    if (debug) {
+                        print "[DEBUG] Set indent char as " indent_char
+                    }
+                    continue
                 }
-                continue
             }
         }
     }

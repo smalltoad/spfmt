@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 #  ___  __ _____   ____| | | |_ ___   ____  __| |
 # / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
@@ -47,7 +47,7 @@ assert_builder() {
     # Reset OPTIND to ensure clean argument parsing.
     OPTIND=1
 
-    while getopts "f:h:m:e:i:o:x:v" opt; do
+    while getopts "f:h:m:e:i:o:x:v:" opt; do
         case "${opt}" in
         f)
             # Add file to end of command.
@@ -62,9 +62,9 @@ assert_builder() {
             # * If there is no mock file, then assume parameters passed are
             # * sufficient to make one.
             # */
-            if [[ ! -f "${mock_location}${OPTARG%%:*}" ]]; then
-                mock_script "${OPTARG}"
-            fi
+            #if [[ ! -f "${mock_location}${OPTARG%%:*}" ]]; then
+            #    mock_script "${OPTARG}"
+            #fi
             mocks="${mocks} -f ${mock_location}${OPTARG}"
             ;;
         e)
@@ -94,7 +94,15 @@ assert_builder() {
             # TODO: This breaks the output capture that BATS provides.
             #    Debugs are also captured, perhaps there is a better way to
             #    seperate actual output from debug statements in BATS.
-            vars=" -v ${OPTARG}"
+            IFS=':' read -ra var_array <<<"${OPTARG}"
+            IFS=' '
+            # Process each variable assignment
+            for var_assignment in "${var_array[@]}"; do
+                # Skip empty assignments
+                if [[ -n "${var_assignment}" ]]; then
+                    vars="${vars} -v ${var_assignment}"
+                fi
+            done
             ;;
         \?)
             printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
@@ -107,8 +115,7 @@ assert_builder() {
     done
 
     concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${output}"
-    echo "${concat_command}"
-
+    echo "${concat_command}" >&3
     run bash -c "${concat_command}"
 
     if [[ "${INFO}" -eq 1 ]]; then
@@ -139,7 +146,8 @@ mock_script() {
     targets=${arguments#*:}
 
     script_path="${BATS_TEST_DIRNAME}/../../../src/${script_name}"
-    mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}"
+    # Append parent PID to separate mocks in a suite.
+    mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}.$$"
 
     touch "${mock_path}"
 

@@ -63,10 +63,7 @@ load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
 
 setup_file() {
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
-}
 
-# Runs for each @test case
-setup() {
     export mocked_script
 
     # Create mock for test suite.
@@ -75,6 +72,7 @@ setup() {
 }
 
 teardown_file() {
+    rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
