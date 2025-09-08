@@ -37,6 +37,7 @@ assert_builder() {
     output=""                 # Output file for stdout redirection.
     expected=""               # Expected return of AWK to compare to.
     direct=""                 # Directly append arguments.
+    exit_code=""
 
     # Known locations.
     scripts_location="${BATS_TEST_DIRNAME}/../../../src/"
@@ -48,7 +49,7 @@ assert_builder() {
     # Reset OPTIND to ensure clean argument parsing.
     OPTIND=1
 
-    while getopts "f:h:m:e:i:o:x:v:s:" opt; do
+    while getopts "f:h:m:e:i:o:x:v:s:c:" opt; do
         case "${opt}" in
         f)
             # Add file to end of command.
@@ -97,16 +98,20 @@ assert_builder() {
             #    seperate actual output from debug statements in BATS.
             IFS=':' read -ra var_array <<<"${OPTARG}"
             IFS=' '
-            # Process each variable assignment
+            # Process each variable assignment.
             for var_assignment in "${var_array[@]}"; do
-                # Skip empty assignments
+                # Skip empty assignments.
                 if [[ -n "${var_assignment}" ]]; then
                     vars="${vars} -v ${var_assignment}"
                 fi
             done
             ;;
         s)
+            # Simple flag/option appending.
             direct="${direct} ${OPTARG}"
+            ;;
+        c)
+            exit_code="${OPTARG}"
             ;;
         \?)
             printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
@@ -119,16 +124,11 @@ assert_builder() {
     done
 
     concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
-
+    echo "${concat_command}" >&3
     run bash -c "${concat_command}"
 
-    if [[ "${INFO}" -eq 1 ]]; then
-        printf "[INFO] Expected: [%q]\n" "${expected}" >&3
-        printf "[INFO] Actual:   [%q]\n" "${output}" >&3
-    fi
-
     # Check status and output from what BATS captures
-    bats_status_check && bats_output_check "${expected}"
+    bats_status_check "${exit_code}" && bats_output_check "${expected}"
 }
 
 #=============#
@@ -162,6 +162,8 @@ mock_script() {
 
         if [[ "${fn}" = "BEGIN" ]]; then
             sed_command+=" -e '/^${fn} /,/^}$/d'"
+        elif [[ "${fn}" = "END" ]]; then
+            sed_command+=" -e '/^${fn} /,/^}$/d'"
         elif [[ "${fn}" = "REGEX" ]]; then
             sed_command+=" -e '/^\/\^/,/^}$/d'"
         elif [[ "${fn}" = "{}" ]]; then
@@ -189,10 +191,17 @@ mock_script() {
 
 # Checks BATS status var for last command ran
 bats_status_check() {
+    expected_status="${1:-0}"
+
+    if [[ "${INFO}" -eq 1 ]]; then
+        printf "[INFO] Expected Status: [%q]\n" "${expected_status}" >&3
+        printf "[INFO] Actual Status:   [%q]\n" "${status}" >&3
+    fi
+
     # Check that AWK exit code is successful first.
     # SURPRESSION REASON: Greater POSIX compliance.
     # shellcheck disable=SC2292
-    [ "${status}" -eq 0 ] || {
+    [ "${status}" -eq "${expected_status}" ] || {
         printf "[ERROR] Exit code was non-zero: [%s]" "${status}" >&2
         return 1
     }
@@ -201,6 +210,11 @@ bats_status_check() {
 # Checks BATS status var of the last command ran
 bats_output_check() {
     expected="$1"
+
+    if [[ "${INFO}" -eq 1 ]]; then
+        printf "[INFO] Expected Output: [%q]\n" "${expected}" >&3
+        printf "[INFO] Actual Output:   [%q]\n" "${output}" >&3
+    fi
 
     # Check that AWK output matches expectation.
     # SURPRESSION REASON: Greater POSIX compliance.

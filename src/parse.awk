@@ -23,3 +23,10 @@ function strip_inline_comment(line) {
     sub("/#.*$/", "", line)
     return line
 }
+
+function is_a_number(line) {
+    if (line ~ /^[0-9]+$/) {
+        return 0
+    }
+    return 1
+}

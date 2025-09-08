@@ -94,7 +94,7 @@ setup_file() {
     export mocked_script
 
     # Create mock for test suite.
-    mocked_script_path=$(mock_script "${script}:BEGIN:REGEX:{}")
+    mocked_script_path=$(mock_script "${script}:BEGIN:END:REGEX:{}")
     mocked_script=$(basename -- "${mocked_script_path}")
 }
 
@@ -107,10 +107,100 @@ teardown_file() {
 # TEST CASES #
 #============#
 
-@test "[TEST] generate mock!" {
+@test "[TEST] Show help flag correctly sets flag for help" {
+    flag="- -h"
+    env="HELP_FLAG=\"SHOW_HELP\""
+
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
-        -s "- -h" \
+        -s "${flag}" \
+        -e "${env}" \
         -x "1"
+}
+
+@test "[TEST] Debug flag correctly sets flag for debug mode" {
+    flag="- -d"
+    env="DEBUG_FLAG=\"DEBUG\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "1"
+}
+
+@test "[TEST] Help and debug flags get set correctly simultaneously" {
+    flag="- -d -h"
+    env="HELP_FLAG=\"SHOW_HELP\" DEBUG_FLAG=\"DEBUG\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "2"
+}
+
+@test "[TEST] Help, debug and version flags get set correctly simultaneously" {
+    flag="- -d -h -v"
+    env="HELP_FLAG=\"SHOW_HELP\" DEBUG_FLAG=\"DEBUG\" VERSION_FLAG=\"SHOW_VERSION\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "3"
+}
+
+@test "[TEST] Setting indent_char correctly sets override flag and gets the correct value for a real number" {
+    flag="- -c space"
+    env="CHAR_FLAG=\"TRUE\" MOCK_IS_AN_INDENT_RESULT=\"true\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "1:space"
+}
+
+@test "[TEST] Setting indent_char correctly sets override flag and gets the correct value for a fake number" {
+    flag="- -c space"
+    env="CHAR_FLAG=\"TRUE\" MOCK_IS_AN_INDENT_RESULT=\"false\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -c "2" \
+        -x "[ERROR] -c|--indent-char requires a character"
+}
+
+@test "[TEST] Setting indent_size correctly sets override flag and gets the correct value for a real number" {
+    flag="- -s 4"
+    env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"true\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "1:4"
+}
+
+@test "[TEST] Setting indent_size incorrectly does not override flag and results in no value for a fake number" {
+    flag="- -s notanumber"
+    env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"false\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -c "2" \
+        -x "[ERROR] -s|--indent-size requires a positive integer"
 }

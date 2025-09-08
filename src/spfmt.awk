@@ -20,8 +20,8 @@ BEGIN {
 
     # Default configuration variables, overriddable via .editorconfig or CLI.
     # NOTE: In editorconfig.awk these get modified directly based on name.
-    indent_size = 4
-    indent_char = " "
+    indent_size = ""
+    indent_char = ""
 
     # Current indentation level, used to track depth.
     current_level = 0
@@ -40,8 +40,10 @@ BEGIN {
     # PARSE AND CONFIGURATION SETUP #
     # ============================= #
 
-    # Process command line arguments.
-    parse_arguments()
+    # Process command line arguments, if it was unsuccessful then bail.
+    if (parse_arguments() != 0) {
+        exit 2
+    }
 
     # Immediately after parsing, check for debug mode first.
     if (debug) { print "[DEBUG] Debug mode enabled." }
@@ -132,37 +134,45 @@ function parse_arguments(    i, arg) {
             ARGV[i] = ""
         }
         else if (arg == "-s" || arg == "--indent-size") {
-            if (i + 1 < ARGC && ARGV[i + 1] ~ /^[0-9]+$/) {
+            # Do we have another argument for indent size and is it an integer?
+            if (i + 1 < ARGC && is_a_number(ARGV[i + 1]) == 0) {
                 defaults_overriden = 1
                 indent_size = ARGV[i + 1]
                 ARGV[i] = ""
                 ARGV[i + 1] = ""
-                i++ # Skip the argument two ahead
-            }
-            else {
-                print\
-                    "[ERROR] -s|--indent-size requires a positive integer"
-                exit 2
+                i++ # Skip ahead again because this option takes an extra arg.
+
+                if (debug) {
+                    print "[DEBUG] indent size option provided with good argument of: " indent_size
+                }
+            } else {
+                print "[ERROR] -s|--indent-size requires a positive integer"
+                return 2
             }
         }
         else if (arg == "-c" || arg == "--indent-char") {
-            if (i + 1 < ARGC) {
+            # Do we have another argument for indent char and is it supported?
+            if (i + 1 < ARGC && is_an_indent(ARGV[i + 1]) == 0) {
                 defaults_overriden = 1
                 indent_char = ARGV[i + 1]
                 ARGV[i] = ""
                 ARGV[i + 1] = ""
-                i++ # Skip the argument two ahead
+                i++ # Skip ahead again because this option takes an extra arg.
+
+                if (debug) {
+                    print "[DEBUG] indent char option provided with good argument of: " indent_char
+                }
             }
             else {
                 print\
                     "[ERROR] -c|--indent-char requires a character"
-                exit 2
+                return 2
             }
         }
         else if (arg ~ /^-/) {
             printf("Error: Unknown option: %s\n", arg)
             print "Use --help for usage information"
-            exit 2
+            return 2
         }
         else {
             # This is a file argument
@@ -239,14 +249,6 @@ function create_indent(level, indent, i) {
     for (i = 0; i < level * indent_size; i++) { indent = indent indent_char }
 
     return indent
-}
-
-# Remove leading and trailing whitespace
-function trim_line(str, result) {
-    result = str
-    gsub(/^[ \t]+/, "", result)
-    gsub(/[ \t]+$/, "", result)
-    return result
 }
 
 function print_help() {
