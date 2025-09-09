@@ -157,7 +157,7 @@ function parse_arguments(    i, arg) {
                 indent_char = ARGV[i + 1]
                 ARGV[i] = ""
                 ARGV[i + 1] = ""
-                i++ # Skip ahead again because this option takes an extra arg.
+                i++
 
                 if (debug) {
                     print "[DEBUG] indent char option provided with good argument of: " indent_char
@@ -169,16 +169,33 @@ function parse_arguments(    i, arg) {
                 return 2
             }
         }
-        else if (arg ~ /^-/) {
-            printf("Error: Unknown option: %s\n", arg)
-            print "Use --help for usage information"
-            return 2
+        else if (arg == "-f" || arg == "--file") {
+            # Is there another argument passed in after?
+            if(i + 1 < ARGC) {
+                if (debug) {
+                    print "[DEBUG] Found a file: " ARGV[i + 1]
+                    print "[DEBUG] About to store at index: " file_count
+                }
+
+                file_list[file_count] = ARGV[i + 1]
+                file_count++
+                if (debug) {
+                    print "[DEBUG] File count incremented to: " file_count
+                    for (j = 0; j < file_count; j++) {
+                        print "[DEBUG] file_list[" j "] = '" file_list[j] "'"
+                    }
+                }
+                ARGV[i] = ""
+                ARGV[i + 1] = ""
+                i++
+            } else {
+                print "[ERROR] -f flag found with no positional argument."
+            }
         }
-        else {
-            # This is a file argument
-            file_list[file_count] = arg
-            file_count++
-            ARGV[i] = "" # Prevent AWK from auto-processing it
+        else if (arg ~ /^-/) {
+            printf("[ERROR] Unknown option: %s\n", arg)
+            print "[ERROR] Use --help for usage information"
+            return 2
         }
     }
 }

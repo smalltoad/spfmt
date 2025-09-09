@@ -11,30 +11,43 @@
 
 {
     to_print = ""
-
-    # Removes "-" argument used to stop reading input.
+    file_count = 0 # Needed for initalization in printing.
+    # Removes stdin indicator "-" argument used to stop reading input.
     delete ARGV[1]
 
     ret = parse_arguments()
 
     if (ret == 0) {
-        if(ENVIRON["HELP_FLAG"] == "SHOW_HELP") {
-            to_print += show_help
-        }
-        if (ENVIRON["DEBUG_FLAG"] == "DEBUG") {
-            to_print += debug
-        }
-        if (ENVIRON["VERSION_FLAG"] == "SHOW_VERSION") {
-            to_print += show_version
-        }
-        if (ENVIRON["SIZE_FLAG"] == "TRUE") {
-            to_print = defaults_overriden ":" indent_size
-        }
-        if (ENVIRON["CHAR_FLAG"] == "TRUE") {
-            to_print = defaults_overriden ":" indent_char
-        }
+        # Return code.
+        printf("RETURN_CODE=%d\n", return_code)
 
-        print to_print
+        # Boolean flags.
+        printf("SHOW_HELP=%d\n", show_help ? 1 : 0)
+        printf("SHOW_VERSION=%d\n", show_version ? 1 : 0)
+        printf("DEBUG=%d\n", debug ? 1 : 0)
+        printf("IN_PLACE=%d\n", in_place ? 1 : 0)
+        printf("DEFAULTS_OVERRIDDEN=%d\n", defaults_overriden ? 1 : 0)
+
+        # Print configuration values.
+        printf("INDENT_SIZE=%s\n", indent_size != "" ? indent_size : "UNSET")
+        printf("INDENT_CHAR=%s\n", indent_char != "" ? indent_char : "UNSET")
+
+        # Print file processing information.
+        printf("FILE_COUNT=%d\n", file_count ? file_count : 0)
+
+        # Print file list if any files were found.
+        if (0 < file_count) {
+            printf("FILES=")
+            for (i = 0; i < file_count; i++) {
+                if (i > 0) {
+                    printf(",") # First run prints nothing
+                }
+                printf("%s", file_list[i])
+            }
+            printf("\n")
+        } else {
+            printf("FILES=NONE\n")
+        }
     } else {
         # Exit with the same code returned to prevent continued parsing.
         exit ret

@@ -110,61 +110,111 @@ teardown_file() {
 @test "[TEST] Show help flag correctly sets flag for help" {
     flag="- -h"
     env="HELP_FLAG=\"SHOW_HELP\""
+    expected="RETURN_CODE=0
+SHOW_HELP=1
+SHOW_VERSION=0
+DEBUG=0
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=0
+INDENT_SIZE=UNSET
+INDENT_CHAR=UNSET
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "1"
+        -x "${expected}"
 }
 
 @test "[TEST] Debug flag correctly sets flag for debug mode" {
     flag="- -d"
     env="DEBUG_FLAG=\"DEBUG\""
+    expected="RETURN_CODE=0
+SHOW_HELP=0
+SHOW_VERSION=0
+DEBUG=1
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=0
+INDENT_SIZE=UNSET
+INDENT_CHAR=UNSET
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "1"
+        -x "${expected}"
 }
 
 @test "[TEST] Help and debug flags get set correctly simultaneously" {
     flag="- -d -h"
     env="HELP_FLAG=\"SHOW_HELP\" DEBUG_FLAG=\"DEBUG\""
+    expected="RETURN_CODE=0
+SHOW_HELP=1
+SHOW_VERSION=0
+DEBUG=1
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=0
+INDENT_SIZE=UNSET
+INDENT_CHAR=UNSET
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "2"
+        -x "${expected}"
 }
 
 @test "[TEST] Help, debug and version flags get set correctly simultaneously" {
     flag="- -d -h -v"
     env="HELP_FLAG=\"SHOW_HELP\" DEBUG_FLAG=\"DEBUG\" VERSION_FLAG=\"SHOW_VERSION\""
+    expected="RETURN_CODE=0
+SHOW_HELP=1
+SHOW_VERSION=1
+DEBUG=1
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=0
+INDENT_SIZE=UNSET
+INDENT_CHAR=UNSET
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "3"
+        -x "${expected}"
 }
 
 @test "[TEST] Setting indent_char correctly sets override flag and gets the correct value for a real number" {
     flag="- -c space"
     env="CHAR_FLAG=\"TRUE\" MOCK_IS_AN_INDENT_RESULT=\"true\""
+    expected="RETURN_CODE=0
+SHOW_HELP=0
+SHOW_VERSION=0
+DEBUG=0
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=1
+INDENT_SIZE=UNSET
+INDENT_CHAR=space
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "1:space"
+        -x "${expected}"
 }
 
 @test "[TEST] Setting indent_char correctly sets override flag and gets the correct value for a fake number" {
@@ -180,19 +230,29 @@ teardown_file() {
         -x "[ERROR] -c|--indent-char requires a character"
 }
 
-@test "[TEST] Setting indent_size correctly sets override flag and gets the correct value for a real number" {
+@test "[TEST] Setting indent_size correctly sets override defaults flag and gets the correct value for a real number" {
     flag="- -s 4"
     env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"true\""
+    expected="RETURN_CODE=0
+SHOW_HELP=0
+SHOW_VERSION=0
+DEBUG=0
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=1
+INDENT_SIZE=4
+INDENT_CHAR=UNSET
+FILE_COUNT=0
+FILES=NONE"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
         -e "${env}" \
-        -x "1:4"
+        -x "${expected}"
 }
 
-@test "[TEST] Setting indent_size incorrectly does not override flag and results in no value for a fake number" {
+@test "[TEST] Setting indent_size incorrectly does not override defaults flag and results in no value for a fake number" {
     flag="- -s notanumber"
     env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"false\""
 
@@ -203,4 +263,84 @@ teardown_file() {
         -e "${env}" \
         -c "2" \
         -x "[ERROR] -s|--indent-size requires a positive integer"
+}
+
+@test "[TEST] Unsupported flag will no added option will cause early exit" {
+    flag="- -p"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -c "2" \
+        -x "[ERROR] Unknown option: -p
+[ERROR] Use --help for usage information"
+}
+
+@test "[TEST] Unsupported flag with option will cause early exit" {
+    flag="- -p breakitdown"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -c "2" \
+        -x "[ERROR] Unknown option: -p
+[ERROR] Use --help for usage information"
+}
+
+@test "[TEST] Unsupported flag with option when preceeding a valid option will cause early exit" {
+    flag="- -s 2 -p breakitdown"
+    env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"true\""
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -c "2" \
+        -x "[ERROR] Unknown option: -p
+[ERROR] Use --help for usage information"
+}
+
+@test "[TEST] Can correctly set indent size and char at the same time" {
+    flag="- -s 4 -c space"
+    env="SIZE_FLAG=\"TRUE\" MOCK_IS_A_NUMBER_RESULT=\"true\" CHAR_FLAG=\"TRUE\" MOCK_IS_AN_INDENT_RESULT=\"true\""
+    expected="RETURN_CODE=0
+SHOW_HELP=0
+SHOW_VERSION=0
+DEBUG=0
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=1
+INDENT_SIZE=4
+INDENT_CHAR=space
+FILE_COUNT=0
+FILES=NONE"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -x "${expected}"
+}
+
+@test "[TEST] Files read in get correctly added to file list" {
+    flag="- -f file1.txt -f file2.awk"
+    expected="RETURN_CODE=0
+SHOW_HELP=0
+SHOW_VERSION=0
+DEBUG=0
+IN_PLACE=0
+DEFAULTS_OVERRIDDEN=0
+INDENT_SIZE=UNSET
+INDENT_CHAR=UNSET
+FILE_COUNT=2
+FILES=NONE"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -x "${expected}"
 }
