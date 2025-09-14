@@ -22,6 +22,8 @@ BEGIN {
     # NOTE: In editorconfig.awk these get modified directly based on name.
     indent_size = ""
     indent_char = ""
+    default_indent_size = 4
+    default_indent_char = "space"
 
     # Current indentation level, used to track depth.
     current_level = 0
@@ -274,7 +276,7 @@ function parse_arguments(    i, arg) {
 function create_indent(    indent, i) {
     indent = ""
 
-    for (i = 0; i < level * indent_size; i++) {
+    for (i = 0; i < current_level * indent_size; i++) {
         indent = indent indent_char
     }
 
@@ -298,11 +300,11 @@ function print_help() {
 
     printf("OPTIONS:\n")
     printf(\
-        "    -i, --in-place        Edit files in-place (creates .bak backup)\n"\
+        "    -i, --in-place        Edit files in-place.\n"\
     )
     printf(\
         "    -s, --indent-size N   Set indentation size (default: %d)\n",
-        indent_size\
+        default_indent_size\
     )
     printf(\
         "    -c, --indent-char C   Set indentation character (default: space)\n"\
@@ -339,15 +341,12 @@ function print_version() {
 END {
     if (DEBUG_MODE) {
         printf(\
-            "# Processing complete. Final level: %d\n",
+            "[DEBUG] Processing complete. Final level: %d\n",
             current_level > "/dev/stderr"\
         )
     }
 
     if (current_level != 0) {
-        printf(\
-            "# Warning: Unmatched blocks detected (level %d). Check your Describe/End pairs.\n",
-            current_level > "/dev/stderr"\
-        )
+        printf("[ERROR] Unmatched blocks detected (level %d).\n", current_level)
     }
 }

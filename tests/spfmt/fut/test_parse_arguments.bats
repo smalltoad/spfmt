@@ -227,7 +227,7 @@ FILES=NONE"
         -s "${flag}" \
         -e "${env}" \
         -c "2" \
-        -x "[ERROR] -c|--indent-char requires a character."
+        -x "[ERROR] -c|--indent-char flag found with no positional argument."
 }
 
 @test "[TEST] Setting indent_size correctly sets override defaults flag and gets the correct value for a real number" {
