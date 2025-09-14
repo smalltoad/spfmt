@@ -28,6 +28,7 @@ VERSION := 0.1.0
 # */
 SOURCES := spfmt.awk parse.awk editorconfig.awk file_utils.awk
 PREPARED_SOURCES = $(addprefix $(SRC_DIR)/, $(SOURCES))
+WRAPPER := ./src/cli_wrapper.sh
 
 # Output files.
 COMBINED_AWK := $(BUILD_DIR)/combined.awk
@@ -48,7 +49,7 @@ RM_RF := rm -rf
 $(BUILD_DIR):
 	@$(MKDIR_P) "$(BUILD_DIR)" || $(PRINTF) "Could not create build directory.\n"
 
-$(COMBINED_AWK): $(PREPARED_SOURCES) | $(BUILD_DIR)
+$(COMBINED_AWK): $(PREPARED_SOURCES) $(WRAPPER) | $(BUILD_DIR)
 	@$(PRINTF) "=== Building Combined AWK executable ===\n"
 
 	@# Shebang for awk

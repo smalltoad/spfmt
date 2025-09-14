@@ -1,4 +1,4 @@
-#!/usr/bin/env bats
+#!/usr/bin/env sh
 #  ___  __ _____   ____| | | |_ ___   ____  __| |
 # / __||  _   _ \ / _  | | | __/ _ \ / _  |/ _  |
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
@@ -22,6 +22,6 @@ case "$@" in
         ;;
     # Otherwise, run the program.
     *)
-        run_spfmt "$@"
+        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - /dev/null "$@"
         ;;
 esac

@@ -116,18 +116,18 @@ BEGIN {
     # ============= #
 
     # If no files specified, process stdin.
-    if (file_count == 0) {
-        if (DEBUG_MODE) {
-            print "[DEBUG] No files found from CLI."
-            print "[DEBUG] Processing from stdin instead..."
-        }
-
-        # TODO: Implement function.
-        process_input()
-    } else {
-        # TODO: Implement function.
-        process_files()
-    }
+    # if (file_count == 0) {
+    #     if (DEBUG_MODE) {
+    #         print "[DEBUG] No files found from CLI."
+    #         print "[DEBUG] Processing from stdin instead..."
+    #     }
+#
+    #     # TODO: Implement function.
+    #     process_input()
+    # } else {
+    #     # TODO: Implement function.
+    #     process_files()
+    # }
 }
 
 # Parse command line arguments using ARGC/ARGV

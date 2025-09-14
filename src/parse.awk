@@ -24,9 +24,27 @@ function strip_inline_comment(line) {
     return line
 }
 
+# TODO: Create tests for this function.
+function trim_line(line) {
+    line = strip_leading_whitespace(line)
+    line = strip_trailing_whitespace(line)
+}
+
+# TODO: Find a better home for this function.
 function is_a_number(line) {
     if (line ~ /^[0-9]+$/) {
         return 0
     }
     return 1
+}
+
+# TODO: Make this function resolve correctly.
+function is_an_indent(line) {
+    if (line ~ /^space+$/) {
+        return " "
+    } else if (line ~ /^tab+$/) {
+        return "\t"
+    }
+    return 1
+
 }
