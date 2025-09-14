@@ -37,6 +37,7 @@ assert_builder() {
     output=""                 # Output file for stdout redirection.
     expected=""               # Expected return of AWK to compare to.
     direct=""                 # Directly append arguments.
+    remove=""                 # To filter out of output before assert.
     exit_code=""
 
     # Known locations.
@@ -49,7 +50,7 @@ assert_builder() {
     # Reset OPTIND to ensure clean argument parsing.
     OPTIND=1
 
-    while getopts "f:h:m:e:i:o:x:v:s:c:" opt; do
+    while getopts "f:h:m:e:i:o:x:v:s:c:r:" opt; do
         case "${opt}" in
         f)
             # Add file to end of command.
@@ -113,6 +114,10 @@ assert_builder() {
         c)
             exit_code="${OPTARG}"
             ;;
+        r)
+            # Expects regex for command 'sed -e /OPTARG/d'
+            remove="${OPTARG}"
+            ;;
         \?)
             printf "[ERROR] Unsupported option of: -%s" "${OPTARG}" >&2
             ;;
@@ -124,8 +129,16 @@ assert_builder() {
     done
 
     concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
+
+    # TODO: Remove this line. Is used for testing.
     echo "${concat_command}" >&3
+
     run bash -c "${concat_command}"
+
+    # Filter out any requested lines from output.
+    if [[ -n "${remove}" ]]; then
+        output=$(echo "${output}" | sed -e "/${remove}/d")
+    fi
 
     # Check status and output from what BATS captures
     bats_status_check "${exit_code}" && bats_output_check "${expected}"

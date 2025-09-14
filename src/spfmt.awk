@@ -16,7 +16,7 @@ BEGIN {
 
     # Program metadata
     PROGRAM_NAME = "spfmt"
-    VERSION = "1.0.0"
+    VERSION = "0.1.0"
 
     # Default configuration variables, overriddable via .editorconfig or CLI.
     # NOTE: In editorconfig.awk these get modified directly based on name.
@@ -27,7 +27,7 @@ BEGIN {
     current_level = 0
 
     # Flags/options spfmt handles.
-    debug = 0 # Debug mode flag, turns on verbose output.
+    DEBUG_MODE = 0 # Debug mode flag, turns on verbose output.
     defaults_overriden = 0 # Flag to track if defaults were overridden.
     in_place = 0 # In-place flag, files will be modified directly with backups.
     show_help = 0
@@ -46,50 +46,67 @@ BEGIN {
     }
 
     # Immediately after parsing, check for debug mode first.
-    if (debug) { print "[DEBUG] Debug mode enabled." }
+    if (DEBUG_MODE) {
+        print "[DEBUG] Debug mode enabled."
+    }
 
     # Handle help and version options first, then exit.
     if (show_help) {
-        if (debug) {
+        if (DEBUG_MODE) {
             print "[DEBUG] Help requested."
 
             if (defaults_overriden != 0 || file_count > 0) {
                 print\
-                    "[DEBUG] CLI options were provided, but help option takes preceedence."
+                    "[DEBUG] CLI options were provided, but help option takes preceedence and causes early exit."
             }
         }
 
         print_help()
     }
     else if (show_version) {
-        if (debug) {
+        if (DEBUG_MODE) {
             print "[DEBUG] Version requested."
 
             if (defaults_overriden != 0 || file_count > 0) {
                 print\
-                    "[DEBUG] CLI options were provided, but version option takes preceedence."
+                    "[DEBUG] CLI options were provided, but version option takes preceedence and causes early exit."
             }
         }
 
         print_version()
     }
 
-    # CLI modifications will take preference over config file.
+    # If CLI parameters were passed for formatting, don't search for another source.
     if (defaults_overriden == 0) {
-        if (debug) {
+        if (DEBUG_MODE) {
             print "[DEBUG] No CLI formatting options found."
             print "[DEBUG] Searching for .editorconfig file."
         }
 
         load_config_file()
+
+        # Resort to sane defaults if no overrides provided via CLI or .editorconfig file.
+        if (defaults_overriden == 0) {
+            if (DEBUG_MODE) {
+                print "[DEBUG] No .editorconfig formatting options found."
+            }
+
+            indent_size = "4"
+            indent_char = " "
+
+            if (DEBUG_MODE) {
+                print "[DEBUG] Resorting to sane defaults of space indentation and indent size of " + indent_size + "."
+            }
+        }
     }
 
     # Print final settings for formatting.
-    if (debug) {
+    if (DEBUG_MODE) {
         print "[DEBUG] Final formatting settings"
-        print "[DEBUG] indent size:"
-        print "[DEBUG] indent char:"
-        print "[DEBUG] line-ending:"
+        print "[DEBUG] indent size: " indent_size
+        print "[DEBUG] indent char: " indent_char
+        # TODO: Add configuration for line ending.
+        # print "[DEBUG] line-ending: "
     }
 
     # ============= #
@@ -98,15 +115,15 @@ BEGIN {
 
     # If no files specified, process stdin.
     if (file_count == 0) {
-        if (debug) {
+        if (DEBUG_MODE) {
             print "[DEBUG] No files found from CLI."
             print "[DEBUG] Processing from stdin instead..."
         }
 
+        # TODO: Implement function.
         process_input()
-    }
-    else {
-        # Process each file from CLI.
+    } else {
+        # TODO: Implement function.
         process_files()
     }
 }
@@ -116,17 +133,17 @@ function parse_arguments(    i, arg) {
     for (i = 1; i < ARGC; i++) {
         arg = ARGV[i]
 
-        # Handle options first
+        # Handle options in order of priority.
         if (arg == "-h" || arg == "--help") {
             show_help = 1
-            ARGV[i] = "" # Similar to shift, but removes from $@.
+            ARGV[i] = ""
         }
         else if (arg == "-v" || arg == "--version") {
             show_version = 1
             ARGV[i] = ""
         }
         else if (arg == "-d" || arg == "--debug") {
-            debug = 1
+            DEBUG_MODE = 1
             ARGV[i] = ""
         }
         else if (arg == "-i" || arg == "--in-place") {
@@ -134,24 +151,25 @@ function parse_arguments(    i, arg) {
             ARGV[i] = ""
         }
         else if (arg == "-s" || arg == "--indent-size") {
-            # Do we have another argument for indent size and is it an integer?
+            # Is there another argument for indent size and is it an integer?
             if (i + 1 < ARGC && is_a_number(ARGV[i + 1]) == 0) {
                 defaults_overriden = 1
                 indent_size = ARGV[i + 1]
                 ARGV[i] = ""
                 ARGV[i + 1] = ""
-                i++ # Skip ahead again because this option takes an extra arg.
+                i++
 
-                if (debug) {
-                    print "[DEBUG] indent size option provided with good argument of: " indent_size
+                if (DEBUG_MODE) {
+                    print "[DEBUG] indent size option provided with good argument of: " \
+                        indent_size > "/dev/stderr"
                 }
             } else {
-                print "[ERROR] -s|--indent-size requires a positive integer"
+                print "[ERROR] -s|--indent-size requires a positive integer."
                 return 2
             }
         }
         else if (arg == "-c" || arg == "--indent-char") {
-            # Do we have another argument for indent char and is it supported?
+            # Is there another argument for indent char and is it supported?
             if (i + 1 < ARGC && is_an_indent(ARGV[i + 1]) == 0) {
                 defaults_overriden = 1
                 indent_char = ARGV[i + 1]
@@ -159,70 +177,63 @@ function parse_arguments(    i, arg) {
                 ARGV[i + 1] = ""
                 i++
 
-                if (debug) {
-                    print "[DEBUG] indent char option provided with good argument of: " indent_char
+                if (DEBUG_MODE) {
+                    print "[DEBUG] indent char option provided with good argument of: " \
+                        indent_char > "/dev/stderr"
                 }
-            }
-            else {
-                print\
-                    "[ERROR] -c|--indent-char requires a character"
+            } else {
+                print "[ERROR] -c|--indent-char flag found with no positional argument."
                 return 2
             }
         }
         else if (arg == "-f" || arg == "--file") {
             # Is there another argument passed in after?
             if(i + 1 < ARGC) {
-                if (debug) {
-                    print "[DEBUG] Found a file: " ARGV[i + 1]
-                    print "[DEBUG] About to store at index: " file_count
+                if (DEBUG_MODE) {
+                    print "[DEBUG] Found a file: " ARGV[i + 1] > "/dev/stderr"
                 }
-
                 file_list[file_count] = ARGV[i + 1]
                 file_count++
-                if (debug) {
-                    print "[DEBUG] File count incremented to: " file_count
-                    for (j = 0; j < file_count; j++) {
-                        print "[DEBUG] file_list[" j "] = '" file_list[j] "'"
-                    }
-                }
                 ARGV[i] = ""
                 ARGV[i + 1] = ""
                 i++
             } else {
-                print "[ERROR] -f flag found with no positional argument."
+                print "[ERROR] -f|--file flag found with no positional argument."
+                return 2
             }
         }
         else if (arg ~ /^-/) {
             printf("[ERROR] Unknown option: %s\n", arg)
-            print "[ERROR] Use --help for usage information"
+            print "[ERROR] Use --help for usage information."
             return 2
         }
     }
 }
 
-# Handle empty lines, preserve them as-is
+# TODO: Update empty line handling to strip whitespace.
+# Handles empty lines, preserve them as-is
 /^[ \t]*$/ {
     print $0
     next
 }
 
-# Handle 'End' statements, decrease indentation level
+# Handle 'End' statements, decrease in indentation level now.
 /^[ \t]*End[ \t]*$/ {
     current_level = (current_level > 0) ? current_level - 1 : 0
 
-    if (debug) {
-        printf("# End found, level now %d\n", current_level)
+    if (DEBUG_MODE) {
+        printf("[DEBUG] End found, level now %d\n", current_level)
     }
 
     printf("%s%s\n", create_indent(current_level), trim_line($0))
     next
 }
 
-# Handle block-starting keywords, increase indentation after printing
+# Handle scope-starting keywords, increase indentation level after printing.
 /^[ \t]*(Describe|Context|It|Before|After|BeforeAll|AfterAll|BeforeEach|AfterEach)[ \t]/ {
-    if (debug) {
+    if (DEBUG_MODE) {
         printf(\
-            "# Block keyword found: %s, level %d\n",
+            "[DEBUG] Block keyword found: %s, level %d\n",
             $1,
             current_level > "/dev/stderr"\
         )
@@ -233,11 +244,11 @@ function parse_arguments(    i, arg) {
     next
 }
 
-# Handle statement keywords, maintain current indentation
+# Handle statement keywords, maintain current indentation level.
 /^[ \t]*(When|The|Skip|Pending|Todo)[ \t]/ {
-    if (debug) {
+    if (DEBUG_MODE) {
         printf(\
-            "# Statement keyword found: %s, level %d\n",
+            "[DEBUG] Statement keyword found: %s, level %d\n",
             $1,
             current_level > "/dev/stderr"\
         )
@@ -247,11 +258,11 @@ function parse_arguments(    i, arg) {
     next
 }
 
-# Default case, handle all other lines
+# Default case, handle all other lines such as comments.
 {
-    if (debug) {
+    if (DEBUG_MODE) {
         printf(\
-            "# Other line, maintaining level %d\n",
+            "[DEBUG] Other line, maintaining level %d\n",
             current_level > "/dev/stderr"\
         )
     }
@@ -259,11 +270,13 @@ function parse_arguments(    i, arg) {
     printf("%s%s\n", create_indent(current_level), trim_line($0))
 }
 
-# Create indentation string for given level
-function create_indent(level, indent, i) {
+# Dynamically create indentation string for any given level.
+function create_indent(    indent, i) {
     indent = ""
 
-    for (i = 0; i < level * indent_size; i++) { indent = indent indent_char }
+    for (i = 0; i < level * indent_size; i++) {
+        indent = indent indent_char
+    }
 
     return indent
 }
@@ -324,7 +337,7 @@ function print_version() {
 }
 
 END {
-    if (debug) {
+    if (DEBUG_MODE) {
         printf(\
             "# Processing complete. Final level: %d\n",
             current_level > "/dev/stderr"\

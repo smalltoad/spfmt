@@ -99,7 +99,7 @@ setup_file() {
 }
 
 teardown_file() {
-    #rm -rf "${mocked_script_path}"
+    rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
@@ -227,7 +227,7 @@ FILES=NONE"
         -s "${flag}" \
         -e "${env}" \
         -c "2" \
-        -x "[ERROR] -c|--indent-char requires a character"
+        -x "[ERROR] -c|--indent-char requires a character."
 }
 
 @test "[TEST] Setting indent_size correctly sets override defaults flag and gets the correct value for a real number" {
@@ -262,7 +262,7 @@ FILES=NONE"
         -s "${flag}" \
         -e "${env}" \
         -c "2" \
-        -x "[ERROR] -s|--indent-size requires a positive integer"
+        -x "[ERROR] -s|--indent-size requires a positive integer."
 }
 
 @test "[TEST] Unsupported flag will no added option will cause early exit" {
@@ -274,7 +274,7 @@ FILES=NONE"
         -s "${flag}" \
         -c "2" \
         -x "[ERROR] Unknown option: -p
-[ERROR] Use --help for usage information"
+[ERROR] Use --help for usage information."
 }
 
 @test "[TEST] Unsupported flag with option will cause early exit" {
@@ -286,7 +286,7 @@ FILES=NONE"
         -s "${flag}" \
         -c "2" \
         -x "[ERROR] Unknown option: -p
-[ERROR] Use --help for usage information"
+[ERROR] Use --help for usage information."
 }
 
 @test "[TEST] Unsupported flag with option when preceeding a valid option will cause early exit" {
@@ -300,7 +300,7 @@ FILES=NONE"
         -e "${env}" \
         -c "2" \
         -x "[ERROR] Unknown option: -p
-[ERROR] Use --help for usage information"
+[ERROR] Use --help for usage information."
 }
 
 @test "[TEST] Can correctly set indent size and char at the same time" {
@@ -336,11 +336,35 @@ DEFAULTS_OVERRIDDEN=0
 INDENT_SIZE=UNSET
 INDENT_CHAR=UNSET
 FILE_COUNT=2
-FILES=NONE"
+FILES=file1.txt,file2.awk"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -s "${flag}" \
+        -x "${expected}"
+}
+
+@test "[TEST] Putting it all together now with a successful parse" {
+    flag="- -d -h -v -i -s 5 -c tab -f mytextfile1 -f mygoodcode2"
+    env="SIZE_FLAG=\"true\" MOCK_IS_A_NUMBER_RESULT=\"true\" CHAR_FLAG=\"true\" MOCK_IS_AN_INDENT_RESULT=\"true\""
+    expected="RETURN_CODE=0
+SHOW_HELP=1
+SHOW_VERSION=1
+DEBUG=1
+IN_PLACE=1
+DEFAULTS_OVERRIDDEN=1
+INDENT_SIZE=5
+INDENT_CHAR=tab
+FILE_COUNT=2
+FILES=mytextfile1,mygoodcode2"
+    remove='\[DEBUG\].*$'
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -s "${flag}" \
+        -e "${env}" \
+        -r "${remove}" \
         -x "${expected}"
 }

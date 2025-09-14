@@ -10,8 +10,10 @@
 # License: GNU GPLv3
 
 {
-    to_print = ""
-    file_count = 0 # Needed for initalization in printing.
+    # Needed for initalization in printing.
+    # Otherwise file 0 is not displayed correctly in this file.
+    file_count = 0
+
     # Removes stdin indicator "-" argument used to stop reading input.
     delete ARGV[1]
 
@@ -24,7 +26,7 @@
         # Boolean flags.
         printf("SHOW_HELP=%d\n", show_help ? 1 : 0)
         printf("SHOW_VERSION=%d\n", show_version ? 1 : 0)
-        printf("DEBUG=%d\n", debug ? 1 : 0)
+        printf("DEBUG=%d\n", DEBUG_MODE ? 1 : 0)
         printf("IN_PLACE=%d\n", in_place ? 1 : 0)
         printf("DEFAULTS_OVERRIDDEN=%d\n", defaults_overriden ? 1 : 0)
 
@@ -40,7 +42,7 @@
             printf("FILES=")
             for (i = 0; i < file_count; i++) {
                 if (i > 0) {
-                    printf(",") # First run prints nothing
+                    printf(",") # First run prints nothing.
                 }
                 printf("%s", file_list[i])
             }

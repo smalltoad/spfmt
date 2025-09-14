@@ -341,6 +341,7 @@ function _parse_editorconfig(config_file,    line, in_section) {
                 if (line ~ /^indent_size[ \t]*=/) {
                     sub(/^indent_size[ \t]*=[ \t]*/, "", line)
                     indent_size = line
+                    defaults_overriden = 1
                     if (debug) {
                         print "[DEBUG] Set indent size as " indent_size
                     }
@@ -352,6 +353,7 @@ function _parse_editorconfig(config_file,    line, in_section) {
                 if (line ~ /^indent_char[ \t]*=/) {
                     sub(/^indent_char[ \t]*=[ \t]*/, "", line)
                     indent_char = line
+                    defaults_overriden = 1
                     if (debug) {
                         print "[DEBUG] Set indent char as " indent_char
                     }
