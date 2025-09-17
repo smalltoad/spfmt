@@ -28,6 +28,7 @@ function strip_inline_comment(line) {
 function trim_line(line) {
     line = strip_leading_whitespace(line)
     line = strip_trailing_whitespace(line)
+    return line
 }
 
 # TODO: Find a better home for this function.

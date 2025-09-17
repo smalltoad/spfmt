@@ -44,9 +44,9 @@ function load_config_file(    _current_dir, _editorconfig_path, _configs_found, 
     _configs_found = 0
     _root_found = 0
 
-    if (debug) {
+    if (DEBUG_MODE) {
         print\
-            "[DEBUG] Starting .editorconfig discovery from: "  _current_dir
+            "[DEBUG] Starting .editorconfig discovery from: "  _current_dir > "/dev/stderr"
     }
 
     # Walks up the directory structure from current working directory.
@@ -60,26 +60,26 @@ function load_config_file(    _current_dir, _editorconfig_path, _configs_found, 
         if (_editorconfig_path != "") {
             _configs_found += 1
 
-            if (debug) {
-                print "[DEBUG] Found .editorconfig at: " _editorconfig_path
+            if (DEBUG_MODE) {
+                print "[DEBUG] Found .editorconfig at: " _editorconfig_path > "/dev/stderr"
             }
 
             # Parse the located .editorconfig file for indent size and char.
             _parse_editorconfig(_editorconfig_path)
 
-            if (debug) {
+            if (DEBUG_MODE) {
                 if (indent_char) {
-                    print "[DEBUG] Indent character was found at " _editorconfig_path
-                    print "[DEBUG] Indent character now set to: " indent_char
+                    print "[DEBUG] Indent character was found at " _editorconfig_path > "/dev/stderr"
+                    print "[DEBUG] Indent character now set to: " indent_char > "/dev/stderr"
                 } else {
-                    print "[DEBUG] Indent character was not found at " _editorconfig_path
+                    print "[DEBUG] Indent character was not found at " _editorconfig_path > "/dev/stderr"
                 }
 
                 if (indent_size) {
-                    print "[DEBUG] Indent size was found at " _editorconfig_path
-                    print "[DEBUG] Indent size now set to: " indent_size
+                    print "[DEBUG] Indent size was found at " _editorconfig_path > "/dev/stderr"
+                    print "[DEBUG] Indent size now set to: " indent_size > "/dev/stderr"
                 } else {
-                    print "[DEBUG] Indent size was not found at " _editorconfig_path
+                    print "[DEBUG] Indent size was not found at " _editorconfig_path > "/dev/stderr"
                 }
             }
 
@@ -88,8 +88,8 @@ function load_config_file(    _current_dir, _editorconfig_path, _configs_found, 
                 # Move up a directory before iterating again.
                 _current_dir = get_parent_directory()
             } else {
-                if (debug) {
-                    print "[DEBUG] Root found, stopping .editorConfig file searching."
+                if (DEBUG_MODE) {
+                    print "[DEBUG] Root found, stopping .editorconfig file searching." > "/dev/stderr"
                 }
 
                 # Stop searching for more
@@ -100,22 +100,22 @@ function load_config_file(    _current_dir, _editorconfig_path, _configs_found, 
         } else {
             # No configs found the entire search.
             if (_configs_found == 0) {
-                if (debug) {
-                    print "[DEBUG] No .editorconfig file found, resorting to fallbacks."
+                if (DEBUG_MODE) {
+                    print "[DEBUG] No .editorconfig file found, resorting to fallbacks." > "/dev/stderr"
                 }
             # Debug prints for discovered settings.
             } else {
-                if (debug) {
+                if (DEBUG_MODE) {
                     if (indent_char) {
-                        print "[DEBUG] Indent character was found to be: " indent_char
+                        print "[DEBUG] Indent character was found to be: " indent_char > "/dev/stderr"
                     } else {
-                        print "[DEBUG] Indent char not set, resorting to safe fallback."
+                        print "[DEBUG] Indent char not set, resorting to safe fallback." > "/dev/stderr"
                     }
 
                     if (indent_size) {
-                        print "[DEBUG] Indent size was found to be: " indent_size
+                        print "[DEBUG] Indent size was found to be: " indent_size > "/dev/stderr"
                     } else {
-                        print "[DEBUG] Indent size not set, resorting to safe fallback"
+                        print "[DEBUG] Indent size not set, resorting to safe fallback" > "/dev/stderr"
                     }
                 }
             }
@@ -160,10 +160,10 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
         # Append "/.editorconfig" to current search path.
         _file_path_to_check = _curr_path "/.editorconfig"
 
-        if (debug) {
+        if (DEBUG_MODE) {
             print\
                 "[DEBUG] Checking for .editorconfig at: "\
-                    _file_path_to_check
+                    _file_path_to_check > "/dev/stderr"
         }
 
         # Does the path lead to a file?
@@ -171,57 +171,55 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
 
         # Was there a .editorconfig file in the directory?
         if (_is_file == 0) {
-            if (debug) {
+            if (DEBUG_MODE) {
                 print\
                     "[DEBUG] Found .editorconfig at: "\
-                        _file_path_to_check
+                        _file_path_to_check > "/dev/stderr"
             }
 
             _is_readable = test_readable(_file_path_to_check)
 
-            if (debug) {
+            if (DEBUG_MODE) {
                 print\
                     "[DEBUG] The .editorconfig is "\
-                        _is_readable\
-                        ? "readable."\
-                        : "un-readable."
+                        (_is_readable ? "readable." : "un-readable.") > "/dev/stderr"
             }
 
             # Is the file readable?
             if (_is_readable == 0) {
                 # File exists, file is readable, now return!
-                if (debug) {
+                if (DEBUG_MODE) {
                     print\
                         "[DEBUG] Found readable .editorconfig at: "\
-                            _file_path_to_check
+                            _file_path_to_check > "/dev/stderr"
                 }
 
                 return _file_path_to_check
 
             } else {
                 # File exists, but IS NOT readable?
-                if (debug) {
+                if (DEBUG_MODE) {
                     print\
                         "[DEBUG] Found UNREADABLE .editorconfig at: "\
-                            _file_path_to_check
+                            _file_path_to_check > "/dev/stderr"
                 }
             }
         }
 
-        if (debug) {
+        if (DEBUG_MODE) {
             print\
                 "[DEBUG] No .editorconfig file found at: "\
-                    _file_path_to_check
+                    _file_path_to_check > "/dev/stderr"
         }
 
         # No match in _curr_path !
         # Move up one directory from original start_dir and keep looking.
         _parent_dir = get_parent_directory(_curr_path)
 
-        if (debug) {
+        if (DEBUG_MODE) {
             print\
                 "[DEBUG] Stepping up a directory: "\
-                    _parent_dir
+                    _parent_dir > "/dev/stderr"
         }
 
         if (_parent_dir == start_dir) {
@@ -245,8 +243,8 @@ function _is_root_config(config_file,    line, found_root) {
     found_root = 1
 
     if(config_file ~ /^[ \t]*$/) {
-        if (debug) {
-            print "[DEBUG] Early exit, no parameter passed."
+        if (DEBUG_MODE) {
+            print "[DEBUG] Early exit, no parameter passed." > "/dev/stderr"
         }
         return found_root
     }
@@ -269,8 +267,8 @@ function _is_root_config(config_file,    line, found_root) {
         # Finally, is the line 'root = true'?
         if (tolower(line) ~ /^root[ \t]*=[ \t]*true[ \t]*$/) {
             found_root = 0
-            if (debug) {
-                print "[DEBUG] Root .editorconfig file found."
+            if (DEBUG_MODE) {
+                print "[DEBUG] Root .editorconfig file found." > "/dev/stderr"
             }
             break
         }
@@ -292,21 +290,31 @@ function _is_root_config(config_file,    line, found_root) {
 # */
 function _parse_editorconfig(config_file,    line, in_section) {
     if(config_file ~ /^[ \t]*$/) {
-        if (debug) {
-            print "[DEBUG] Early exit, no parameter passed."
+        if (DEBUG_MODE) {
+            print "[DEBUG] Early exit, no config file passed." > "/dev/stderr"
         }
+
         return 1
     }
 
-    if (debug) {
-        print "[DEBUG] Parsing .editorconfig file at: " config_file
+    if (DEBUG_MODE) {
+        print "[DEBUG] Parsing .editorconfig file at: " config_file > "/dev/stderr"
     }
 
-    # 1 is false for in section
+    # Set initial in_section to false. Gets set to 0 when section is found.
     in_section = 1
 
     # Read the config file line by line.
     while ((getline line < config_file) > 0) {
+        # Early exit if all defaults have been overriden.
+        if (defaults_overriden == 1) {
+            if (DEBUG_MODE) {
+                print "[DEBUG] Found all params from .editorconfig file, stoping parsing." > "/dev/stderr"
+            }
+
+            break
+        }
+
         # Remove leading/trailing whitespace.
         strip_leading_whitespace(line)
         strip_trailing_whitespace(line)
@@ -319,12 +327,17 @@ function _parse_editorconfig(config_file,    line, in_section) {
             gsub(/^\[|\]$/, "", line)  # Remove brackets
 
             if (line == "awk" || line == "spfmt") {
-                if (debug) {
-                    print "[DEBUG] Found awk/spfmt section."
+                if (DEBUG_MODE) {
+                    print "[DEBUG] Found awk/spfmt section." > "/dev/stderr"
                 }
                 in_section = 0
+
             # If in a section block and in_section is 1, awk/spfmt settings are over.
             } else if (in_section == 0){
+                if (DEBUG_MODE) {
+                    print "[DEBUG] Left awk/spfmt section, stoping parsing." > "/dev/stderr"
+                }
+
                 break
             }
 
@@ -332,36 +345,45 @@ function _parse_editorconfig(config_file,    line, in_section) {
         }
 
         #/**
-        # * Parse "key = value" pairs, if indent/char are already set assume that
-        # * they were set from an earlier config file that was not root, and this
-        # * is an additional file found on the file system.
+        # * Only update the indent_char/size if both are true:
+        # *  - There were no CLI overrides provided at runtime.
+        # *  - indent_char/size was not found in a previous (non-root) .editorconfig file.
         # */
         if (in_section == 0) {
-            if(!indent_size) {
+            if(indent_size_overriden == 0 && !indent_size) {
                 if (line ~ /^indent_size[ \t]*=/) {
-                    sub(/^indent_size[ \t]*=[ \t]*/, "", line)
+                    sub(/^indent_size[ \t]*=[ \t]*/, "", line) # Remove everything but leave key value.
                     indent_size = line
-                    defaults_overriden = 1
-                    if (debug) {
-                        print "[DEBUG] Set indent size as " indent_size
+                    indent_size_overriden = 1
+
+                    if (DEBUG_MODE) {
+                        print "[DEBUG] Set indent size as " indent_size > "/dev/stderr"
                     }
+
+                    # Update defaults_overriden to see if an early exit should be taken.
+                    _check_overrides()
+
                     continue
                 }
             }
-
-            if(!indent_char) {
+            if(indent_char_overriden == 0 && !indent_char) {
                 if (line ~ /^indent_char[ \t]*=/) {
                     sub(/^indent_char[ \t]*=[ \t]*/, "", line)
                     indent_char = line
-                    defaults_overriden = 1
-                    if (debug) {
-                        print "[DEBUG] Set indent char as " indent_char
+                    indent_char_overriden = 1
+
+                    if (DEBUG_MODE) {
+                        print "[DEBUG] Set indent char as " indent_char > "/dev/stderr"
                     }
+
+                    _check_overrides()
+
                     continue
                 }
             }
         }
     }
+
     close(config_file)
 }
 
@@ -374,8 +396,14 @@ function _parse_editorconfig(config_file,    line, in_section) {
 function get_current_dir(current_dir) {
     current_dir = ENVIRON["PWD"]
 
-    # "If current directory is not set OR the directory is not real."
-    if (!current_dir || !test_directory(current_dir)) { current_dir = "." }
+    if (DEBUG_MODE) {
+        print "[DEBUG] AWK thinks the current PWD is " current_dir > "/dev/stderr"
+    }
+
+    # If current directory is not set OR the directory is not real.
+    if (current_dir == "" || test_directory(current_dir) == 1) {
+        current_dir = "."
+    }
 
     return current_dir
 }
@@ -389,4 +417,12 @@ function get_parent_directory(path,    cmd, _result) {
     close(cmd)
 
     return _result
+}
+
+function _check_overrides() {
+    defaults_overriden = indent_size_overriden && indent_char_overriden
+
+    if (DEBUG_MODE) {
+        print "[DEBUG] Defaults override is now: " defaults_overriden > "/dev/stderr"
+    }
 }

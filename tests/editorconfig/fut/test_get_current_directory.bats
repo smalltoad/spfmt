@@ -133,12 +133,14 @@ teardown_file() {
 
 @test "[TEST] get_current_directory returns the correct absolute path" {
     # Nominal test case with normal pwd process environment variable.
+    env="MOCK_TEST_DIRECTORY_RESULT=\"true\""
     expected=$(pwd)
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -x "${expected}"
+        -x "${expected}" \
+        -e "${env}"
 }
 
 @test "[TEST] get_current_directory returns the "." when pwd is unset" {
@@ -180,7 +182,7 @@ teardown_file() {
 @test "[TEST] get_current_directory handles PWD as root directory" {
     # The root directory edge/special case.
     expected="/"
-    env="PWD=/"
+    env="PWD=/ MOCK_TEST_DIRECTORY_RESULT=\"true\""
 
     assert_builder \
         -f "${script}" \
@@ -193,7 +195,7 @@ teardown_file() {
     # Create tmp dir to test is paths with leading slash work.
     tmp_dir=$(mktemp -d)
     expected="${tmp_dir}/"
-    env="PWD=${expected}"
+    env="PWD=${expected} MOCK_TEST_DIRECTORY_RESULT=\"true\""
 
     assert_builder \
         -f "${script}" \

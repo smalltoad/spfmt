@@ -1,11 +1,11 @@
 this test case has no trailing whitespace
-this test case has a single trailing whitespace
-this test case has many trailing whitespace
-this test case has a single trailing tab
-this test case has many trailing tab
+this test case has a single trailing whitespace 
+this test case has many trailing whitespace    
+this test case has a single trailing tab    
+this test case has many trailing tab                                    
 
 thistestcasehasnotrailingwhitespace
-thistestcasehasasingletrailingwhitespace
-thistestcasehasmanytrailingwhitespace
-thistestcasehasasingletrailingtab
-thistestcasehasmanytrailingtab
+thistestcasehasasingletrailingwhitespace 
+thistestcasehasmanytrailingwhitespace              
+thistestcasehasasingletrailingtab    
+thistestcasehasmanytrailingtab                           

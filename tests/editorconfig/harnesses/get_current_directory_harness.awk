@@ -20,9 +20,9 @@
 function test_directory(arg) {
     # Mock control environment variable will store literal return result.
     if (ENVIRON["MOCK_TEST_DIRECTORY_RESULT"] == "false") {
-        return 0  # Return false (directory doesn't exist).
+        return 1  # Return false (directory doesn't exist).
     } else if (ENVIRON["MOCK_TEST_DIRECTORY_RESULT"] == "true") {
-        return 1  # Return true (directory exists).
+        return 0  # Return true (directory exists).
     } else {
         # Fallback to false if expected environ not found.
         return 1

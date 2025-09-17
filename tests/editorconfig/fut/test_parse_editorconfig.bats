@@ -86,7 +86,7 @@ setup_file() {
 }
 
 teardown_file() {
-    rm -rf "${mocked_script_path}"
+    #rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
@@ -119,22 +119,24 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] _parse_editorconfig returns indent size 2 and indent char space for single AWK entry" {
+@test "[TEST] _parse_editorconfig can find AWK section and return correct values when there is only an AWK section" {
     # Test case that proves parsing of expected input.
     input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space" >"${input}"
+    vars="indent_size_overriden=0:indent_char_overriden=0"
     expected="2:space"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
         -i "${input}" \
+        -v "${vars}" \
         -x "${expected}"
 }
 
-@test "[TEST] _parse_editorconfig returns indent size 2 and indent char space for awk entire after another" {
+@test "[TEST] _parse_editorconfig can find AWK section and return correct values when AWK sections comes after another" {
     # Test case that proves parsing of expected input.
     input=$(mktemp -d)
     input="${input}/.editorconfig"
@@ -149,7 +151,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] _parse_editorconfig returns indent size 2 and indent char space for awk entire before another" {
+@test "[TEST] _parse_editorconfig can find AWK section and return correct values when AWK sections comes before another" {
     # Test case that proves parsing of expected input.
     input=$(mktemp -d)
     input="${input}/.editorconfig"
@@ -164,12 +166,12 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] _parse_editorconfig returns indent size 2 and indent char space for awk entire before another with empty line" {
+@test "[TEST] _parse_editorconfig can find AWK section and return correct values when there is both good and bad data" {
     # Test case that proves parsing of expected input.
     input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
-    printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
+    printf "bad data\n[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
     expected="2:space"
 
     assert_builder \
@@ -179,13 +181,47 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] _parse_editorconfig does not replace set indent and character values" {
+@test "[TEST] _parse_editorconfig does not replace previously set indent and character values" {
     # Test case that proves parsing of expected input.
     input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
     vars="indent_size=1:indent_char=tab"
+    expected="1:tab"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -i "${input}" \
+        -v "${vars}" \
+        -x "${expected}"
+}
+
+@test "[TEST] _parse_editorconfig does not replace runtime overrides on indent and character values" {
+    # Test case that proves parsing of expected input.
+    input=$(mktemp -d)
+    input="${input}/.editorconfig"
+    touch "${input}"
+    printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
+    vars="indent_size=1:indent_char=tab:indent_size_overriden=1:indent_char_overriden=1"
+    expected="1:tab"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -i "${input}" \
+        -v "${vars}" \
+        -x "${expected}"
+}
+
+@test "[TEST] _parse_editorconfig does not parse more when defaults are all overriden" {
+    # Test case that proves parsing of expected input.
+    input=$(mktemp -d)
+    input="${input}/.editorconfig"
+    touch "${input}"
+    printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
+    vars="defaults_overriden=1:indent_size=1:indent_char=tab:indent_size_overriden=1:indent_size_overriden=1"
     expected="1:tab"
 
     assert_builder \

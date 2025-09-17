@@ -49,37 +49,44 @@ RM_RF := rm -rf
 $(BUILD_DIR):
 	@$(MKDIR_P) "$(BUILD_DIR)" || $(PRINTF) "Could not create build directory.\n"
 
+#   $(COMBINED_AWK): $(PREPARED_SOURCES) $(WRAPPER) | $(BUILD_DIR)
+#   	@$(PRINTF) "=== Building Combined AWK executable ===\n"
+#
+#   	@# Shebang for awk
+#   	@echo '#!/usr/bin/awk -f' >> $(COMBINED_AWK)
+#   	@echo '' >> $(COMBINED_AWK)
+#
+#   	@# Autogen header for awk file
+#   	@echo '# $(PROGRAM_NAME) v$(VERSION) - Generated build' >> $(COMBINED_AWK)
+#   	@echo '# Build date: $(shell date)' >> $(COMBINED_AWK)
+#   	@echo '' >> $(COMBINED_AWK)
+#
+#   	@# Concatenate all source files, removing shebangs and comments
+#   	@# sed command 1: Remove lines that start with # (comment-only lines)
+#   	@# sed command 2: For lines void of quotes, remove everything after #
+#   	@# sed command 3: For lines with quotes, preserve quoted strings but remove trailing comments
+#   	@for src in $(PREPARED_SOURCES); do \
+#   		echo "Including source file $$src"; \
+#   		echo "# === START OF $$src === #" >> $(COMBINED_AWK); \
+#   		#sed '/^[ \t]*#/d' "$$src" | \
+#   		#sed '/\"/!s/#.*//' | \
+#   		#sed 's/\(.*\"[^\"]*\"[^\"]*\)#.*/\1/' >> $(COMBINED_AWK); \
+#   		cat $$src >> $(COMBINED_AWK); \
+#   		echo '' >> $(COMBINED_AWK); \
+#   		echo "# === END OF $$src === #" >> $(COMBINED_AWK); \
+#   		echo '' >> $(COMBINED_AWK); \
+#   	done
+#
+#   	@# Make the build file executable
+#   	@chmod +x $(COMBINED_AWK)
+#   	@echo "Build complete: $(COMBINED_AWK)"
+
 $(COMBINED_AWK): $(PREPARED_SOURCES) $(WRAPPER) | $(BUILD_DIR)
-	@$(PRINTF) "=== Building Combined AWK executable ===\n"
-
-	@# Shebang for awk
-	@echo '#!/usr/bin/awk -f' >> $(COMBINED_AWK)
-	@echo '' >> $(COMBINED_AWK)
-
-	@# Autogen header for awk file
-	@echo '# $(PROGRAM_NAME) v$(VERSION) - Generated build' >> $(COMBINED_AWK)
-	@echo '# Build date: $(shell date)' >> $(COMBINED_AWK)
-	@echo '' >> $(COMBINED_AWK)
-
-	@# Concatenate all source files, removing shebangs and comments
-	@# sed command 1: Remove lines that start with # (comment-only lines)
-	@# sed command 2: For lines void of quotes, remove everything after #
-	@# sed command 3: For lines with quotes, preserve quoted strings but remove trailing comments
-	@for src in $(PREPARED_SOURCES); do \
-		echo "Including source file $$src"; \
-		echo "# === START OF $$src === #" >> $(COMBINED_AWK); \
-		#sed '/^[ \t]*#/d' "$$src" | \
-		#sed '/\"/!s/#.*//' | \
-		#sed 's/\(.*\"[^\"]*\"[^\"]*\)#.*/\1/' >> $(COMBINED_AWK); \
-		cat $$src >> $(COMBINED_AWK); \
-		echo '' >> $(COMBINED_AWK); \
-		echo "# === END OF $$src === #" >> $(COMBINED_AWK); \
-		echo '' >> $(COMBINED_AWK); \
-	done
-
-	@# Make the build file executable
-	@chmod +x $(COMBINED_AWK)
-	@echo "Build complete: $(COMBINED_AWK)"
+	@printf "=== Building Combined AWK executable ===\n"
+	@tmp=$$(mktemp "$(dir $@)/$(notdir $@).XXXXXX"); \
+	trap 'rm -f "$$tmp"' EXIT; \
+	{ printf '%s\n' '#!/usr/bin/awk -f'; printf '\n'; printf '# %s v%s - Generated build\n' "$(PROGRAM_NAME)" "$(VERSION)"; printf '# Build date: %s\n\n' "$$(date)"; for src in $(PREPARED_SOURCES); do printf '# Including source file %s\n' "$$src"; sed '/^[[:space:]]*#/d' "$$src"; printf '\n'; done; } > "$$tmp"; \
+	if [ ! -e "$@" ] || ! cmp -s "$$tmp" "$@"; then mv "$$tmp" "$@"; chmod +x "$@"; echo "Build complete: $@"; else rm -f "$$tmp"; echo "No changes; $@ up-to-date"; fi
 
 # Build the final distributable via embedding the combined AWK file in a here-doc.
 $(OUTPUT): $(COMBINED_AWK) | $(BUILD_DIR)

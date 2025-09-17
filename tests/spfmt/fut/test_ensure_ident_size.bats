@@ -5,22 +5,20 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 # Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS tests for the create_indent function in the spfmt.awk module.
-# File: test_create_indent.bats
+# Description: BATS tests for the ensure_indent_size function in the spfmt.awk module.
+# File: test_ensure_indent_size.bats
 # License: GNU GPLv3
 
 #=====================#
 # FUNCTION UNDER TEST #
 #=====================#
 
-# function create_indent(    indent, i) {
-#     indent = ""
-#
-#     for (i = 0; i < level * indent_size; i++) {
-#         indent = indent indent_char
+# function ensure_indent_size() {
+#     if (indent_size ~ /^[0-9]+$/) {
+#         return 0
+#     } else {
+#         return 1
 #     }
-#
-#     return indent
 # }
 
 #========#
@@ -31,11 +29,14 @@
 script="spfmt.awk"
 
 # Harness to call specific FUT
-harness="create_indent_harness.awk"
+harness="ensure_indent_size_harness.awk"
 
 # BATS helpers
 load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
+
+# Color sourcing must live outside setup() to be available in current env.
+. "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
 
 setup_file() {
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
@@ -52,50 +53,61 @@ teardown_file() {
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
-#============#
-# TEST CASES #
-#============#
-
-@test "create_indent prints the correct indent for starting level" {
-    env="MOCK_LEVEL=\"0\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
-    expected=""
+@test "ensure_indent_size returns true for the lower boundry" {
+    vars="indent_size=0"
+    expected="0"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
-        -e "${env}" \
+        -v "${vars}" \
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for 1 level deep" {
-    env="MOCK_LEVEL=\"1\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
-    expected="  "
+@test "ensure_indent_size returns true for single diget" {
+    vars="indent_size=9"
+    expected="0"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
-        -e "${env}" \
+        -v "${vars}" \
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for 2 levels deep" {
-    env="MOCK_LEVEL=\"2\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
-    expected="    "
+@test "ensure_indent_size returns true for greatly above the lower boundry" {
+    vars="indent_size=5000"
+    expected="0"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
-        -e "${env}" \
+        -v "${vars}" \
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for many levels deep" {
-    env="MOCK_LEVEL=\"50\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
-    expected=$(printf '%100s' '')
+@test "ensure_indent_size returns false for non integer value of decimal" {
+    vars="indent_size=1.6"
+    remove='\[ERROR\].*$'
+    expected="1"
 
     assert_builder \
         -m "${mocked_script}" \
         -h "${harness}" \
-        -e "${env}" \
+        -v "${vars}" \
+        -r "${remove}" \
+        -x "${expected}"
+}
+
+@test "ensure_indent_size returns false for non integer value of word" {
+    vars="indent_size=notanumber!"
+    remove='\[ERROR\].*$'
+    expected="1"
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -v "${vars}" \
+        -r "${remove}" \
         -x "${expected}"
 }
