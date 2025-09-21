@@ -154,7 +154,6 @@ test:
 	@echo "    Project Root: $(PROJ_ROOT)"
 	@echo "    Test Directory: $(TEST_DIR)"
 	@echo "    INFO level: $(INFO)"
-	@echo "    DEBUG level: $(DEBUG)"
 	@echo ""
 	@echo "Command used:"
 	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)/*/fut/*.bats

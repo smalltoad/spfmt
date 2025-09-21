@@ -75,7 +75,7 @@ function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
     _result = 1 # Until success, assume failiure.
 
     if (!target || !_resolved_flag) {
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             if(!target) {
                 print "[DEBUG] Requires a valid test target to be passed." > "/dev/stderr"
             }
@@ -93,7 +93,11 @@ function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
     }
     _result = system(_cmd)
 
-    if (DEBUG_MODE) {
+    if (DEV_MODE) {
+        print "[DEBUG] Result of cmd command was: " _result > "/dev/stderr"
+    }
+
+    if (DEV_MODE) {
         if (_result == 0) {
             print "[DEBUG] Path " target " is " _resolved_flag "." > "/dev/stderr"
         } else {
@@ -144,7 +148,7 @@ function _value_of_flag(flag,    _FILE, _READABLE, _DIRECTORY, _resolved_flag) {
         return "directory"
     }
 
-    if(DEBUG_MODE) {
+    if(DEV_MODE) {
         print "[DEBUG] Flag \"" flag "\" is unsupported or malformed." > "/dev/stderr"
     }
 

@@ -97,16 +97,18 @@ BEGIN {
     # * If the value is not set, it gets defaulted to off (prints to stdout.)
     # */
     if(!in_place) {
-        in_place = 0
+        in_place = 1
     }
 
     #=========#
     # GLOBALS #
     #=========#
 
+    # Temporary files for atomic writing is stored in OUTPUT_PATH.
+    OUTPUT_PATH = "/var/tmp/spfmt/"
+
     # Current indentation level, used to track depth.
     current_level = 0
-    previous_file = ""
     previous_file = ""  # Explicitly initialize as empty string.
     output_file = ""    # Initialize output file.
 
@@ -121,10 +123,10 @@ BEGIN {
     if (indent_char_overriden == 0 || indent_size_overriden == 0) {
         if (DEBUG_MODE) {
             if (indent_char_overriden == 0) {
-                print "[DEBUG] Missing indent char from CLI." > "/dev/stderr"
+                print "[DEBUG] No supplied indent char from CLI." > "/dev/stderr"
             }
             if (indent_size_overriden == 0) {
-                print "[DEBUG] Missing indent size from CLI." > "/dev/stderr"
+                print "[DEBUG] No supplied indent size from CLI." > "/dev/stderr"
             }
             print "[DEBUG] Attempting to load .editorconfig file." > "/dev/stderr"
         }
@@ -170,31 +172,56 @@ BEGIN {
 
 }
 
-# Prints the current file name in debug mode and prepares the output file.
-FILENAME != previous_file {
-    previous_file = FILENAME
-    if (DEBUG_MODE) {
-        print "[DEBUG] Current input file: " FILENAME > "/dev/stderr"
+#/**
+# * Only runs at the start of a file being processed that is NOT the first.
+# * This means when spfmt handles one file this case will never trigger!
+# * Handles flushing the previous run that just finished processing.
+# */
+FNR == 1 && NR != 1 {
+    if (DEV_MODE) {
+        print "[DEBUG] Case 'FNR == 1 && NR != 1' triggered."
     }
 
-    output_file = FILENAME ".tmp"
+
     if (DEBUG_MODE) {
-        print "[DEBUG] Output file will be: " output_file > "/dev/stderr"
+        printf("[DEBUG] Finished processing: %s\n", previous_file) > "/dev/stderr"
     }
+
+    # Flush the file that was just processed before moving onto the next.
+    flush()
 }
 
-# TODO: Update empty line handling to strip whitespace.
-# Handles empty lines, preserve them as-is
+# Runs at the start of EVERY new file that spfmt processes.
+FILENAME != previous_file {
+    if (DEV_MODE) {
+        print "[DEBUG] Case 'FILENAME != previous_file' triggered."
+    }
+
+    if (DEBUG_MODE) {
+        print "[DEBUG] Current input file being processed: " FILENAME > "/dev/stderr"
+    }
+
+    # Prepare output file.
+    output_file = OUTPUT_PATH FILENAME ".tmp"
+    if (DEBUG_MODE) {
+        print "[DEBUG] Temporary output file will be: " output_file > "/dev/stderr"
+    }
+
+    # Keep track of previous filename to figure when this scope should trigger.
+    previous_file = FILENAME
+}
+
+# Handles empty lines, trimes whitespace.
 /^[ \t]*$/ {
-    print $0
+    print trim_line($0) > output_file
     next
 }
 
-# Handle 'End' statements, decrease in indentation level now.
+# Handle 'End' statements which result in an decrease in indentation level.
 /^[ \t]*End[ \t]*$/ {
     current_level = (current_level > 0) ? current_level - 1 : 0
 
-    if (DEBUG_MODE) {
+    if (DEV_MODE) {
         printf("[DEBUG] End found, level now %d\n", current_level) > "/dev/stderr"
     }
 
@@ -202,9 +229,9 @@ FILENAME != previous_file {
     next
 }
 
-# Handle scope-starting keywords, increase indentation level after printing.
+# Handle scope-starting keywords, increase indentation level for nested scope.
 /^[ \t]*(Describe|Context|It|Before|After|BeforeAll|AfterAll|BeforeEach|AfterEach)[ \t]/ {
-    if (DEBUG_MODE) {
+    if (DEV_MODE) {
         printf("[DEBUG] Block keyword found: %s, level %d\n", $1, current_level) > "/dev/stderr"
     }
 
@@ -215,7 +242,7 @@ FILENAME != previous_file {
 
 # Handle statement keywords, maintain current indentation level.
 /^[ \t]*(When|The|Skip|Pending|Todo)[ \t]/ {
-    if (DEBUG_MODE) {
+    if (DEV_MODE) {
         printf("[DEBUG] Statement keyword found: %s, level %d\n", $1, current_level) > "/dev/stderr"
     }
 
@@ -225,11 +252,70 @@ FILENAME != previous_file {
 
 # Default case, handle all other lines such as comments.
 {
-    if (DEBUG_MODE) {
+    if (DEV_MODE) {
         printf("[DEBUG] Other line, maintaining level %d\n", current_level) > "/dev/stderr"
     }
 
     printf("%s%s\n", create_indent(current_level), trim_line($0)) > output_file
+}
+
+# After everything has been processed, NOT end of file but end of all files.
+END {
+    # When END is reached, if number of records are greater than 0, flush the last file.
+    if (NR > 0) {
+        if (DEBUG_MODE) {
+            printf("[DEBUG] Finished processing: %s\n", previous_file) > "/dev/stderr"
+        }
+
+        flush()
+    }
+
+    if (DEBUG_MODE) {
+        printf("[DEBUG] All files processed. Ending.\n") > "/dev/stderr"
+    }
+}
+
+# Writes the formatted content out to either file or file descriptor 1.
+function flush() {
+    if (current_level != 0) {
+        printf("[ERROR] Unmatched blocks detected! Will not print out.\n")
+    } else {
+        #/**
+        # * NOTE: Must close atomic file before attempting to read from it in the
+        # * following write operations. The file will be re-opened,closed and
+        # * cleaned up in the clean_up function upon exit.
+        # */
+        close(output_file)
+
+        # Logic for determining where the final output needs to go.
+        if (in_place == 0) {
+            # If in place then copy the contents of the .tmp file to the original.
+            write_in_place()
+        } else {
+            # Otherwise spit to stdout.
+            write_to_stdin()
+        }
+
+        # Tidy the workspace.
+        clean_up()
+    }
+}
+
+# In place flag was not true, so write out to consol.
+function write_to_stdin() {
+    if (DEBUG_MODE) {
+        printf("[DEBUG] Writing contents of %s to stdin...\n", output_file) > "/dev/stderr"
+    }
+
+    while ((getline line < output_file) > 0) {
+        print line  # Goes to stdout by default.
+    }
+}
+
+function write_in_place() {
+    if (DEBUG_MODE) {
+        printf("[DEBUG] write_in_place is stubbed for now.\n") > "/dev/stderr"
+    }
 }
 
 # Dynamically create indentation string for any given level.
@@ -246,7 +332,7 @@ function create_indent(    indent, i) {
 # Ensures that a given indent size is a valid integer.
 function ensure_indent_size() {
     if (indent_size ~ /^[0-9]+$/) {
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print "[DEBUG] Indent size of " indent_size " is valid." > "/dev/stderr"
         }
 
@@ -274,57 +360,72 @@ function resolve_indent_char() {
     }
 
     if (DEBUG_MODE) {
-        print "[DEBUG] Indent char of " old_indent_char " was resolved." > "/dev/stderr"
+        print "[DEBUG] Indent char of " old_indent_char " was resolved correctly." > "/dev/stderr"
     }
 
     return 0
 }
 
+function clean_up() {
+    close(output_file)
+    # TODO: Uncomment this line. Currently testing outputs.
+    #system("rm -f " output_file)
+}
+
 function print_help() {
-    printf("%s - Format ShellSpec test files\n\n", PROGRAM_NAME)
-    printf("USAGE:\n")
-    printf("    %s [OPTIONS] [FILE...]\n", PROGRAM_NAME)
-    printf("    %s -h|--help\n", PROGRAM_NAME)
-    printf("    %s --version\n\n", PROGRAM_NAME)
+    printf("%s - Shellspec Formatter\n\n", PROGRAM_NAME)
 
     printf("DESCRIPTION:\n")
     printf(\
-        "    Formats ShellSpec test files with proper indentation and structure.\n"\
+        "\tFormats ShellSpec test files with consistent indentation and structure.\n"\
     )
     printf(\
-        "    If no files are specified, reads from stdin and writes to stdout.\n\n"\
+        "\tIf no files are specified, reads from stdin and writes to stdout.\n"\
     )
+    printf(\
+        "\tSupports .editorconfig standard and reads from [*.sh] section.\n\n"\
+    )
+
+    printf("USAGE:\n")
+    printf("\t%s [OPTIONS] [FILES...]\n", PROGRAM_NAME)
+    printf("\t%s --help\n", PROGRAM_NAME)
+    printf("\t%s --version\n\n", PROGRAM_NAME)
 
     printf("OPTIONS:\n")
     printf(\
-        "    -i, --in-place        Edit files in-place.\n"\
+        "\t-i, --in-place        Edit files in-place, directly overwirting the contents.\n"\
     )
     printf(\
-        "    -s, --indent-size N   Set indentation size (default: %d)\n",
-        default_indent_size\
+        "\t-s, --indent-size N   Set indentation size (default: 2)\n"\
     )
     printf(\
-        "    -c, --indent-char C   Set indentation character (default: space)\n"\
+        "\t-c, --indent-char C   Set indentation character (default: space)\n"\
     )
-    printf("    -d, --debug           Enable debug output to stderr\n")
-    printf("    -h, --help            Show this help message\n")
-    printf("    --version             Show version information\n\n")
+    printf("\t-d, --debug           Enable debug output to stderr\n")
+    printf("\t-dd, --dev-mode       Enable dev mode, more verbose than debug mode\n")
+    printf("\t-h, --help            Show this help message\n")
+    printf("\t-v, --version         Show version information\n\n")
 
     printf("EXAMPLES:\n")
     printf(\
-        "    %s test_spec.sh                    # Format to stdout\n",
+        "\t%s test_spec.sh                     # Format to stdout\n",
         PROGRAM_NAME\
     )
     printf(\
-        "    %s -i spec/*.sh                    # Format multiple files in-place\n",
+        "\t%s -i spec/*.sh                     # Format multiple files in-place in Shellspec folder\n",
         PROGRAM_NAME\
     )
     printf(\
-        "    %s -s 2 spec/my_spec.sh            # Custom indentation\n",
+        "\t%s -s 3 spec/my_spec.sh             # Custom indentation\n",
         PROGRAM_NAME\
     )
     printf(\
-        "    cat test_spec.sh | %s              # From stdin\n", PROGRAM_NAME\
+        "\t%s -c tab spec/my_spec.sh           # Switch from spaces to tabs\n",
+        PROGRAM_NAME\
+    )
+    printf(\
+        "\tcat test_spec.sh | %s > output.txt  # From stdin redirecting stdout to file\n\n",
+        PROGRAM_NAME\
     )
 
     exit 0
@@ -333,18 +434,4 @@ function print_help() {
 function print_version() {
     printf("%s v%s\n", PROGRAM_NAME, VERSION)
     exit 0
-}
-
-END {
-    if (DEBUG_MODE) {
-        printf("[DEBUG] Processing complete. Final level: %d\n", current_level) > "/dev/stderr"
-    }
-
-    if (current_level != 0) {
-        printf("[ERROR] Unmatched blocks detected (level %d).\n", current_level)
-    }
-
-    close(output_file)
-
-    previous_file = FILENAME
 }

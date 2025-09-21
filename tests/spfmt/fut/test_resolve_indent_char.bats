@@ -50,7 +50,7 @@ setup_file() {
 }
 
 teardown_file() {
-    #rm -rf "${mocked_script_path}"
+    rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
@@ -61,6 +61,17 @@ teardown_file() {
 @test "resolve_indent_char correctly resolves space" {
     vars="indent_char=space"
     expected=" "
+
+    assert_builder \
+        -m "${mocked_script}" \
+        -h "${harness}" \
+        -v "${vars}" \
+        -x "${expected}"
+}
+
+@test "resolve_indent_char correctly resolves tab" {
+    vars="indent_char=tab"
+    expected=$(printf "\t")
 
     assert_builder \
         -m "${mocked_script}" \

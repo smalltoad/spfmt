@@ -5,16 +5,36 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 # Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: CLI wrapper for spfmt, provides CLI specific handling while obfuscating AWK cli options away from the user.
+# Description: CLI wrapper for spfmt, provides CLI specific handling while
+#     obfuscating AWK cli options away from the user.
 # File: cli_wrapper.sh
 # License: GNU GPLv3
 
-# Embedded AWK program, placeholder gets substituted at on build through makefile.
+# Embedded AWK program, placeholder gets substituted on build through makefile.
 SPFMT_AWK_PROGRAM=$(
     cat <<'EOF'
 AWK_CODE_PLACEHOLDER
 EOF
 )
+
+# In the event mktemp is not on system.
+TMP_DIR_FALLBACK="/var/tmp/spfmt"
+
+# Temporary directory to store files while preforming atomic operations.
+create_tmp_directory() {
+    # Try mktemp first, else fall back to PID-based approach.
+    if command -v mktemp >/dev/null 2>&1; then
+        TMP_DIR=$(mktemp -d) || {
+            # If mktemp does not succeed, resort to fallback.
+            mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
+        }
+    else
+        # If mktemp does not exist, resort to fallback.
+        TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
+    fi
+
+    trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+}
 
 awk_files=""
 awk_vars=""
@@ -24,20 +44,24 @@ while [ $# -gt 0 ]; do
     case "$1" in
         # If help was requested, format the correct awk command for help.
         -h | --help)
-            printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - /dev/null -h
-            exit 0
+            printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
+            exit "$?"
             ;;
         # If version was requested, format the correct awk command for version.
         -v | --version)
-            printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - /dev/null -v
-            exit 0
+            printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_version=1
+            exit "$?"
             ;;
         -d | --debug)
             awk_vars="${awk_vars} -v DEBUG_MODE=1"
             shift 1
             ;;
+        -dd | --dev-mode)
+            awk_vars="${awk_vars} -v DEBUG_MODE=1 -v DEV_MODE=1"
+            shift 1
+            ;;
         -i | --in-place)
-            awk_vars="${awk_vars} -v in_place=1"
+            awk_vars="${awk_vars} -v in_place=0"
             shift 1
             ;;
         -c | --indent-char)
@@ -82,16 +106,6 @@ while [ $# -gt 0 ]; do
             esac
             shift 2
             ;;
-        #-f | --input-file)
-        #    if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
-        #        printf "Option  -f|--input-file requires an argument.\n"
-        #        exit 2
-        #    fi
-        #    # Add file to file list.
-        #    awk_files="${awk_files} $2"
-        #    shift 2
-        #    ;;
-        # Fallback.
         -*)
             printf "[ERROR] Option %s not recognized.\n" "$1"
             exit 2
@@ -119,8 +133,11 @@ if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
     exit 1
 fi
 
+# Prepare tmp directory, assume at this point spfmt will be invoked.
+create_tmp_directory
+
 #/**
-# * Handle stdin if in a terminal and no files were passed.
+# * Handle stdin if process is in a terminal AND no files were passed.
 # *
 # * Because stdin is usually the spfmt awk progam, in order to make room for
 # * the users stdin arguments spfmt will be written to a tmp file and then

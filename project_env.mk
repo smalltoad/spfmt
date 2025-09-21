@@ -48,7 +48,6 @@ export PREFIX
 export BINDIR
 export INSTALL_TARGET
 export INFO
-export DEBUG
 export VERBOSE
 export BATS_OPTIONS
 export AWK_OPTIONS

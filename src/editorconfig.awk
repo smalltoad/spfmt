@@ -160,7 +160,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
         # Append "/.editorconfig" to current search path.
         _file_path_to_check = _curr_path "/.editorconfig"
 
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print\
                 "[DEBUG] Checking for .editorconfig at: "\
                     _file_path_to_check > "/dev/stderr"
@@ -182,7 +182,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
             if (DEBUG_MODE) {
                 print\
                     "[DEBUG] The .editorconfig is "\
-                        (_is_readable ? "readable." : "un-readable.") > "/dev/stderr"
+                        (_is_readable ? "un-readable." : "readable.") > "/dev/stderr"
             }
 
             # Is the file readable?
@@ -190,7 +190,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
                 # File exists, file is readable, now return!
                 if (DEBUG_MODE) {
                     print\
-                        "[DEBUG] Found readable .editorconfig at: "\
+                        "[DEBUG] Found READABLE .editorconfig at: "\
                             _file_path_to_check > "/dev/stderr"
                 }
 
@@ -216,7 +216,7 @@ function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_
         # Move up one directory from original start_dir and keep looking.
         _parent_dir = get_parent_directory(_curr_path)
 
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print\
                 "[DEBUG] Stepping up a directory: "\
                     _parent_dir > "/dev/stderr"
@@ -243,7 +243,7 @@ function _is_root_config(config_file,    line, found_root) {
     found_root = 1
 
     if(config_file ~ /^[ \t]*$/) {
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print "[DEBUG] Early exit, no parameter passed." > "/dev/stderr"
         }
         return found_root
@@ -290,7 +290,7 @@ function _is_root_config(config_file,    line, found_root) {
 # */
 function _parse_editorconfig(config_file,    line, in_section) {
     if(config_file ~ /^[ \t]*$/) {
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print "[DEBUG] Early exit, no config file passed." > "/dev/stderr"
         }
 
@@ -308,7 +308,7 @@ function _parse_editorconfig(config_file,    line, in_section) {
     while ((getline line < config_file) > 0) {
         # Early exit if all defaults have been overriden.
         if (defaults_overriden == 1) {
-            if (DEBUG_MODE) {
+            if (DEV_MODE) {
                 print "[DEBUG] Found all params from .editorconfig file, stoping parsing." > "/dev/stderr"
             }
 
@@ -327,14 +327,14 @@ function _parse_editorconfig(config_file,    line, in_section) {
             gsub(/^\[|\]$/, "", line)  # Remove brackets
 
             if (line == "awk" || line == "spfmt") {
-                if (DEBUG_MODE) {
+                if (DEV_MODE) {
                     print "[DEBUG] Found awk/spfmt section." > "/dev/stderr"
                 }
                 in_section = 0
 
             # If in a section block and in_section is 1, awk/spfmt settings are over.
             } else if (in_section == 0){
-                if (DEBUG_MODE) {
+                if (DEV_MODE) {
                     print "[DEBUG] Left awk/spfmt section, stoping parsing." > "/dev/stderr"
                 }
 
@@ -396,8 +396,8 @@ function _parse_editorconfig(config_file,    line, in_section) {
 function get_current_dir(current_dir) {
     current_dir = ENVIRON["PWD"]
 
-    if (DEBUG_MODE) {
-        print "[DEBUG] AWK thinks the current PWD is " current_dir > "/dev/stderr"
+    if (DEV_MODE) {
+        print "[DEBUG] AWK thinks ENVIRON[\"PWD\"] is " current_dir > "/dev/stderr"
     }
 
     # If current directory is not set OR the directory is not real.
