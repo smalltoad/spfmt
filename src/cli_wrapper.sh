@@ -10,6 +10,10 @@
 # File: cli_wrapper.sh
 # License: GNU GPLv3
 
+#===============#
+# SPFMT PROGRAM #
+#===============#
+
 # Embedded AWK program, placeholder gets substituted on build through makefile.
 SPFMT_AWK_PROGRAM=$(
     cat <<'EOF'
@@ -17,15 +21,49 @@ AWK_CODE_PLACEHOLDER
 EOF
 )
 
+#===============#
+# TRAP HANDLERS #
+#===============#
+
+traps=""
+
+#/**
+# * Multiple traps may be needed depending on control flow.
+# * add_trap handles keeping track of all traps to preform a full clean-up.
+# */
+add_trap() {
+    if [ -n "${traps}" ]; then
+        traps="${traps}; $1"
+    else
+        traps="${traps}"
+    fi
+}
+
+preform_traps() {
+    if [ -n "${traps}" ]; then
+        eval "${traps}"
+    fi
+}
+
+# This trap will always preform all clean up functions passed to add_trap!
+trap 'preform_traps' EXIT INT TERM
+
+#=====================#
+# SPFMT TMP DIRECTORY #
+#=====================#
+
 # In the event mktemp is not on system.
 TMP_DIR_FALLBACK="/var/tmp/spfmt"
+TMP_DIR=""
 
 # Temporary directory to store files while preforming atomic operations.
 create_tmp_directory() {
     # Try mktemp first, else fall back to PID-based approach.
     if command -v mktemp >/dev/null 2>&1; then
-        TMP_DIR=$(mktemp -d) || {
-            # If mktemp does not succeed, resort to fallback.
+        TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
+            # If mktemp does not succeed, resort to UNSAFE fallback of using /var/tmp...
+            printf "[WARNING] System did not have mktemp bin for tmp directory creation!\n"
+            printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
             mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
         }
     else
@@ -33,8 +71,12 @@ create_tmp_directory() {
         TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
     fi
 
-    trap 'rm -rf "$TMP_DIR"' EXIT INT TERM
+    add_trap "rm -rf '${TMP_DIR}'"
 }
+
+#============#
+# CLI PARSER #
+#============#
 
 awk_files=""
 awk_vars=""
@@ -150,14 +192,14 @@ if [ -z "${awk_files}" ] && [ ! -t 0 ]; then
     }
 
     # Ensure cleanup of tmp file on exit.
-    trap 'rm -f "$awk_temp_file"' EXIT INT TERM
+    add_trap "rm -f '${awk_temp_file}'"
 
     # Write the AWK program to the temporary file.
     printf '%s\n' "${SPFMT_AWK_PROGRAM}" >"${awk_temp_file}"
 
-    awk -f "${awk_temp_file}" ${awk_vars}
+    awk -f "${awk_temp_file}" -v OUTPUT_PATH="${TMP_DIR}"${awk_vars}
 
-# Otherwise handle files normally.
+# Otherwise handle files normally using embedded AWK program.
 else
     concat_command="awk -f - ${awk_vars}${awk_files}"
 
@@ -165,7 +207,7 @@ else
     echo "${concat_command}"
 
     # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/include spaces.
-    printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - ${awk_vars}${awk_files}
+    printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v OUTPUT_PATH="${TMP_DIR}"${awk_vars}${awk_files}
 fi
 
 # Exit with spfmts exit code.

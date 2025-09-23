@@ -100,12 +100,20 @@ BEGIN {
         in_place = 1
     }
 
+    #/**
+    # * Should always get an output path at cli/runtime, but if not assume
+    # * /var/tmp/ for fallback, this is not a great option but lets spfmt run.
+    # */
+    if(!OUTPUT_PATH) {
+        OUTPUT_PATH = "/var/tmp/"
+    }
+
     #=========#
     # GLOBALS #
     #=========#
 
     # Temporary files for atomic writing is stored in OUTPUT_PATH.
-    OUTPUT_PATH = "/var/tmp/spfmt/"
+    #OUTPUT_PATH = "/var/tmp/spfmt/"
 
     # Current indentation level, used to track depth.
     current_level = 0
