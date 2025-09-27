@@ -5,16 +5,9 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 # Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description:  BATS helper for AWK testing, streamlines project test creation and assertions.
+# Description: BATS helper for AWK testing, streamlines test creation and assertions.
 # File: awk_test_helper.bats
 # License: GNU GPLv3
-
-#=========#
-# GLOBALS #
-#=========#
-
-# Turns on INFO prints, disabled by default.
-INFO=${INFO:-0}
 
 # DIRECTIVE JUSTIFICATION: Will inherit BATS env (otherwise script is being used incorrectly.)
 # shellcheck disable=SC2154
@@ -40,15 +33,15 @@ assert_builder() {
     remove=""                 # To filter out of output before assert.
     exit_code=""
 
-    # Known locations.
+    #/**
+    # * Known locations. Relative locations are used to dynamically find
+    # * expected locations during execution.
+    # */
     scripts_location="${BATS_TEST_DIRNAME}/../../../src/"
     wrapper_location="${BATS_TEST_DIRNAME}/../harnesses/"
     mock_location="${BATS_TEST_DIRNAME}/../tmp/"
     input_path="${BATS_TEST_DIRNAME}/../test_data/inputs/"
     output_path="${BATS_TEST_DIRNAME}/../test_data/outputs/"
-
-    # Reset OPTIND to ensure clean argument parsing.
-    OPTIND=1
 
     while getopts "f:h:m:e:i:o:x:v:s:c:r:" opt; do
         case "${opt}" in
@@ -61,13 +54,7 @@ assert_builder() {
             harnesses="${harnesses} -f ${wrapper_location}${OPTARG}"
             ;;
         m)
-            #/**
-            # * If there is no mock file, then assume parameters passed are
-            # * sufficient to make one.
-            # */
-            #if [[ ! -f "${mock_location}${OPTARG%%:*}" ]]; then
-            #    mock_script "${OPTARG}"
-            #fi
+            # Mocks should be constructed in file setup of tests.
             mocks="${mocks} -f ${mock_location}${OPTARG}"
             ;;
         e)
@@ -79,24 +66,23 @@ assert_builder() {
             fi
             ;;
         i)
-            # Input through stdin, expeted ":" deliniated list.
-            # Gets properly parsed in harness.
-            #stdin="printf "%b" '${OPTARG}' | "
-
+            # Input through stdin, expected ":" deliniated list.
+            # Harnesses should properly tokenize.
             stdin="printf '%s' $(printf '%q' "${OPTARG}") | "
             ;;
         o)
-            # Output location
+            # Output location, will get compared later to an expected.
             output=" ${input_path}${OPTARG} > ${output_path}${OPTARG}"
             ;;
         x)
-            # Expected output
+            # Expected output.
             expected="${OPTARG}"
             ;;
         v)
-            # TODO: This breaks the output capture that BATS provides.
-            #    Debugs are also captured, perhaps there is a better way to
-            #    seperate actual output from debug statements in BATS.
+            #/**
+            # * TODO: This breaks the output capture that BATS provides.
+            # * Debugs are also captured, perhaps there is a better way to
+            # * seperate actual output from debug statements in BATS.
             IFS=':' read -ra var_array <<<"${OPTARG}"
             IFS=' '
             # Process each variable assignment.
@@ -112,6 +98,7 @@ assert_builder() {
             direct="${direct} ${OPTARG}"
             ;;
         c)
+            # Expect a non-zero exit code.
             exit_code="${OPTARG}"
             ;;
         r)
