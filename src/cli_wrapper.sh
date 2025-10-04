@@ -87,7 +87,6 @@ main() {
     awk_files=""
     awk_vars=""
 
-    # Handle flags/options.
     while [ $# -gt 0 ]; do
         case "$1" in
             # If help was requested, format the correct awk command for help.
@@ -207,17 +206,12 @@ main() {
         # Write the AWK program to the temporary file.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" >"${awk_temp_file}"
 
-        awk -f "${awk_temp_file}" -v OUTPUT_PATH="${TMP_DIR}"${awk_vars}
+        awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f "${awk_temp_file}"
 
     # Otherwise handle files normally using embedded AWK program.
     else
-        concat_command="awk -f - ${awk_vars}${awk_files}"
-
-        # TODO: Remove this line, was used during testing.
-        echo "${concat_command}"
-
         # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/include spaces.
-        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v OUTPUT_PATH="${TMP_DIR}"${awk_vars}${awk_files}
+        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f - ${awk_files}
     fi
 
     # Exit with spfmts exit code.

@@ -119,6 +119,7 @@ BEGIN {
     current_level = 0
     previous_file = ""  # Explicitly initialize as empty string.
     output_file = ""    # Initialize output file.
+    consecuative_empty_lines = 0
 
     #================#
     # CONFIG LOADING #
@@ -190,7 +191,6 @@ FNR == 1 && NR != 1 {
         print "[DEBUG] Case 'FNR == 1 && NR != 1' triggered."
     }
 
-
     if (DEBUG_MODE) {
         printf("[DEBUG] Finished processing: %s\n", previous_file) > "/dev/stderr"
     }
@@ -199,7 +199,7 @@ FNR == 1 && NR != 1 {
     flush()
 }
 
-# Runs at the start of EVERY new file that spfmt processes.
+# Runs at the start of EVERY new file that spfmt processes. Runs on file "transiton".
 FILENAME != previous_file {
     if (DEV_MODE) {
         print "[DEBUG] Case 'FILENAME != previous_file' triggered."
@@ -221,7 +221,14 @@ FILENAME != previous_file {
 
 # Handles empty lines, trimes whitespace.
 /^[ \t]*$/ {
-    print trim_line($0) > output_file
+    if (DEV_MODE) {
+        printf("[DEBUG] Empty line found, level now %d\n", current_level) > "/dev/stderr"
+    }
+
+    # Do not print here! Print after more chars are found first.
+    #print trim_line($0) > output_file
+
+    consecuative_empty_lines += 1
     next
 }
 
@@ -233,7 +240,11 @@ FILENAME != previous_file {
         printf("[DEBUG] End found, level now %d\n", current_level) > "/dev/stderr"
     }
 
-    printf("%s%s\n", create_indent(current_level), trim_line($0)) > output_file
+    printf("%s%s%s\n", create_newlines(), create_indent(current_level), trim_line($0)) > output_file
+
+    # Reset consecuative empty lines.
+    consecuative_empty_lines = 0
+
     next
 }
 
@@ -243,8 +254,12 @@ FILENAME != previous_file {
         printf("[DEBUG] Block keyword found: %s, level %d\n", $1, current_level) > "/dev/stderr"
     }
 
-    printf("%s%s\n", create_indent(current_level), trim_line($0)) > output_file
+    printf("%s%s%s\n", create_newlines(), create_indent(current_level), trim_line($0)) > output_file
+
     current_level++
+    # Reset consecuative empty lines.
+    consecuative_empty_lines = 0
+
     next
 }
 
@@ -254,7 +269,11 @@ FILENAME != previous_file {
         printf("[DEBUG] Statement keyword found: %s, level %d\n", $1, current_level) > "/dev/stderr"
     }
 
-    printf("%s%s\n", create_indent(current_level), trim_line($0)) > output_file
+    printf("%s%s%s\n", create_newlines(), create_indent(current_level), trim_line($0)) > output_file
+
+    # Reset consecuative empty lines.
+    consecuative_empty_lines = 0
+
     next
 }
 
@@ -264,7 +283,18 @@ FILENAME != previous_file {
         printf("[DEBUG] Other line, maintaining level %d\n", current_level) > "/dev/stderr"
     }
 
-    printf("%s%s\n", create_indent(current_level), trim_line($0)) > output_file
+    # Not a empty line! Reset instead of increment.
+    consecuative_empty_lines = 0
+
+    printf("%s%s%s\n", create_newlines(), create_indent(current_level), trim_line($0)) > output_file
+}
+
+ENDFILE {
+    # Reset consecuative empty lines.
+    consecuative_empty_lines = 0
+
+    # Print last newline to end of file.
+    print "" > output_file
 }
 
 # After everything has been processed, NOT end of file but end of all files.
@@ -315,6 +345,7 @@ function write_to_stdin() {
         printf("[DEBUG] Writing contents of %s to stdin...\n", output_file) > "/dev/stderr"
     }
 
+    line = ""
     while ((getline line < output_file) > 0) {
         print line  # Goes to stdout by default.
     }
@@ -323,7 +354,22 @@ function write_to_stdin() {
 function write_in_place() {
     if (DEBUG_MODE) {
         printf("[DEBUG] write_in_place is stubbed for now.\n") > "/dev/stderr"
+        return
     }
+}
+
+# Dynamically create newlines.
+function create_newlines(    _newlines) {
+    _newlines=""
+
+    for (i = 0; i < consecuative_empty_lines; i++) {
+        _newlines = _newlines "\n"
+    }
+
+    # Reset consecuative empty lines.
+    consecuative_empty_lines = 0
+
+    return _newlines
 }
 
 # Dynamically create indentation string for any given level.
