@@ -37,7 +37,7 @@ BEGIN {
 
         print_version()
     } else if (DEV_MODE) {
-        print "[DEBUG] Starting spfmt"
+        print "[DEBUG] Spfmt awk program invoked!"
     }
 
     #=======================#
@@ -68,9 +68,7 @@ BEGIN {
                 print "[DEBUG] CLI Supplied indent character has been accepted."
             }
         } else {
-            if (DEBUG_MODE) {
-                print "[DEBUG] CLI Supplied indent character is not valid. Exiting..."
-            }
+            print "[ERROR] CLI Supplied indent character is not valid. Exiting..."
 
             exit 2
         }
@@ -158,7 +156,7 @@ BEGIN {
                 print "[DEBUG] Resorting to sane default of space indentation." > "/dev/stderr"
             }
         }
-        if (indent_char_overriden == 0) {
+        if (indent_size_overriden == 0) {
             if (DEBUG_MODE) {
                 print "[DEBUG] No .editorconfig formatting options found for indent size." > "/dev/stderr"
             }

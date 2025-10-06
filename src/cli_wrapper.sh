@@ -78,21 +78,93 @@ create_working_directory() {
     add_trap "rm -rf '${TMP_DIR}'"
 }
 
+#============#
+# CLI PARSER #
+#============#
+
+# Debug level maps to the verbosity modes:
+# - debug mode(1)
+# - dev mode (2)
+DEBUG_LEVEL=0
+DEBUG_MODE=0
+DEV_MODE=0
+# Stores passed files, files don't need a flag.
+awk_files=""
+awk_vars=""
+
+handle_d() {
+    # Get the consecuative d's
+    debugs="${1#-}"
+
+    # Deconstruct debug verbosity and find debug level.
+    while [ -n "${debugs}" ]; do
+        to_remove="${debugs#?}"
+        next_char="${debugs%"${to_remove}"}"
+
+        if [ "${next_char}" = "d" ]; then
+            DEBUG_LEVEL=$((DEBUG_LEVEL + 1))
+        else
+            printf "[ERROR] Debug level is set using 'd' only.\n"
+            exit 2
+        fi
+
+        debugs="${to_remove}"
+    done
+
+    if [ "${DEBUG_LEVEL}" -gt 0 ] && [ "${DEBUG_MODE}" -eq 0 ]; then
+        DEBUG_MODE=1
+        awk_vars="${awk_vars}-v DEBUG_MODE=1 "
+    fi
+
+    if [ "${DEBUG_LEVEL}" -gt 1 ] && [ "${DEV_MODE}" -eq 0 ]; then
+        DEV_MODE=1
+        awk_vars="${awk_vars}-v DEV_MODE=1 "
+    fi
+}
+
+handle_c() {
+    if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
+        printf "Option -c|--indent-char requires an argument.\n"
+        exit 2
+    fi
+    # Validate indentation type.
+    case "$2" in
+        # Only space and tab is supported.
+        space)
+            awk_vars="${awk_vars}-v indent_char=space "
+            ;;
+        tab)
+            awk_vars="${awk_vars}-v indent_char=tab "
+            ;;
+        *)
+            printf "Invalid indent type '%s'. Only 'space' or 'tab' options are supported.\n" "$2"
+            exit 2
+            ;;
+    esac
+}
+
+handle_s() {
+    if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
+        printf "Option  -s|--indent-size requires an argument.\n"
+        exit 2
+    fi
+    # Validate that size is a positive number.
+    case "$2" in
+        '' | *[!0-9]*)
+            printf "Indent size must be a positive number, got '%s'.\n" "$2"
+            exit 2
+            ;;
+        *)
+            if [ "$2" -lt 1 ]; then
+                printf "Width must be greater than 0, got '%s'.\n" "$2"
+                exit 2
+            fi
+            awk_vars="${awk_vars}-v indent_size=$2 "
+            ;;
+    esac
+}
+
 main() {
-
-    #============#
-    # CLI PARSER #
-    #============#
-
-    # Debug level maps to the verbosity modes:
-    # - debug mode(1)
-    # - dev mode (2)
-    DEBUG_LEVEL=0
-    DEBUG_MODE=0
-    DEV_MODE=0
-    # Stores passed files, files don't need a flag.
-    awk_files=""
-    awk_vars=""
 
     while [ $# -gt 0 ]; do
         case "$1" in
@@ -107,36 +179,7 @@ main() {
                 exit "$?"
                 ;;
             -d*)
-                # Get the consecuative d's
-                debugs="${1#-}"
-
-                # Deconstruct debug verbosity and find debug level.
-                while [ -n "${debugs}" ]; do
-                    to_remove="${debugs#?}"
-                    next_char="${debugs%"${to_remove}"}"
-
-                    if [ "${next_char}" = "d" ]; then
-                        DEBUG_LEVEL=$((DEBUG_LEVEL + 1))
-                    else
-                        printf "[ERROR] Debug level is set using 'd' only.\n"
-                        exit 2
-                    fi
-
-                    debugs="${to_remove}"
-                done
-
-                if [ "${DEBUG_LEVEL}" -gt 0 ] && [ "${DEBUG_MODE}" -eq 0 ]; then
-                    echo "debug mode !"
-                    DEBUG_MODE=1
-                    awk_vars="${awk_vars}-v DEBUG_MODE=1 "
-                fi
-
-                if [ "${DEBUG_LEVEL}" -gt 1 ] && [ "${DEV_MODE}" -eq 0 ]; then
-                    echo "dev mode !"
-                    DEV_MODE=1
-                    awk_vars="${awk_vars}-v DEV_MODE=1 "
-                fi
-
+                handle_d "$1"
                 shift 1
                 ;;
             --debug)
@@ -158,45 +201,11 @@ main() {
                 shift 1
                 ;;
             -c | --indent-char)
-                if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
-                    printf "Option -c|--indent-char requires an argument.\n"
-                    exit 2
-                fi
-                # Validate indentation type.
-                case "$2" in
-                    # Only space and tab is supported.
-                    space)
-                        awk_vars="${awk_vars}-v indent_char=space "
-                        ;;
-                    tab)
-                        awk_vars="${awk_vars}-v indent_char=tab "
-                        ;;
-                    *)
-                        printf "Invalid indent type '%s'. Only 'space' or 'tab' options are supported.\n" "$2"
-                        exit 2
-                        ;;
-                esac
+                handle_c "$1" "$2"
                 shift 2
                 ;;
             -s | --indent-size)
-                if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
-                    printf "Option  -s|--indent-size requires an argument.\n"
-                    exit 2
-                fi
-                # Validate that size is a positive number.
-                case "$2" in
-                    '' | *[!0-9]*)
-                        printf "Indent size must be a positive number, got '%s'.\n" "$2"
-                        exit 2
-                        ;;
-                    *)
-                        if [ "$2" -lt 1 ]; then
-                            printf "Width must be greater than 0, got '%s'.\n" "$2"
-                            exit 2
-                        fi
-                        awk_vars="${awk_vars} -v indent_size=$2"
-                        ;;
-                esac
+                handle_s "$1" "$2"
                 shift 2
                 ;;
             -*)
