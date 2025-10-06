@@ -53,37 +53,44 @@ preform_traps() {
 # This trap will always preform all clean up functions passed to add_trap!
 trap 'preform_traps' EXIT INT TERM
 
+#=====================#
+# SPFMT TMP DIRECTORY #
+#=====================#
+
+# In the event mktemp is not on system.
+TMP_DIR_FALLBACK="/var/tmp/spfmt"
+TMP_DIR=""
+
+# Temporary working dir to store files while preforming atomic operations.
+create_working_directory() {
+    # Try mktemp first, else fall back to PID-based approach.
+    if command -v mktemp >/dev/null 2>&1; then
+        TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
+            # If mktemp does not succeed, resort to UNSAFE fallback of using /var/tmp...
+            printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
+            mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
+        }
+    else
+        # If mktemp does not exist, resort to fallback.
+        TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
+    fi
+
+    add_trap "rm -rf '${TMP_DIR}'"
+}
+
 main() {
-
-    #=====================#
-    # SPFMT TMP DIRECTORY #
-    #=====================#
-
-    # In the event mktemp is not on system.
-    TMP_DIR_FALLBACK="/var/tmp/spfmt"
-    TMP_DIR=""
-
-    # Temporary directory to store files while preforming atomic operations.
-    create_tmp_directory() {
-        # Try mktemp first, else fall back to PID-based approach.
-        if command -v mktemp >/dev/null 2>&1; then
-            TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
-                # If mktemp does not succeed, resort to UNSAFE fallback of using /var/tmp...
-                printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
-                mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
-            }
-        else
-            # If mktemp does not exist, resort to fallback.
-            TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
-        fi
-
-        add_trap "rm -rf '${TMP_DIR}'"
-    }
 
     #============#
     # CLI PARSER #
     #============#
 
+    # Debug level maps to the verbosity modes:
+    # - debug mode(1)
+    # - dev mode (2)
+    DEBUG_LEVEL=0
+    DEBUG_MODE=0
+    DEV_MODE=0
+    # Stores passed files, files don't need a flag.
     awk_files=""
     awk_vars=""
 
@@ -99,12 +106,51 @@ main() {
                 printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_version=1
                 exit "$?"
                 ;;
-            -d | --debug)
-                awk_vars="${awk_vars}-v DEBUG_MODE=1 "
+            -d*)
+                # Get the consecuative d's
+                debugs="${1#-}"
+
+                # Deconstruct debug verbosity and find debug level.
+                while [ -n "${debugs}" ]; do
+                    to_remove="${debugs#?}"
+                    next_char="${debugs%"${to_remove}"}"
+
+                    if [ "${next_char}" = "d" ]; then
+                        DEBUG_LEVEL=$((DEBUG_LEVEL + 1))
+                    else
+                        printf "[ERROR] Debug level is set using 'd' only.\n"
+                        exit 2
+                    fi
+
+                    debugs="${to_remove}"
+                done
+
+                if [ "${DEBUG_LEVEL}" -gt 0 ] && [ "${DEBUG_MODE}" -eq 0 ]; then
+                    echo "debug mode !"
+                    DEBUG_MODE=1
+                    awk_vars="${awk_vars}-v DEBUG_MODE=1 "
+                fi
+
+                if [ "${DEBUG_LEVEL}" -gt 1 ] && [ "${DEV_MODE}" -eq 0 ]; then
+                    echo "dev mode !"
+                    DEV_MODE=1
+                    awk_vars="${awk_vars}-v DEV_MODE=1 "
+                fi
+
                 shift 1
                 ;;
-            -dd | --dev-mode)
-                awk_vars="${awk_vars}-v DEBUG_MODE=1 -v DEV_MODE=1 "
+            --debug)
+                if [ "${DEBUG_MODE}" -eq 0 ]; then
+                    DEBUG_MODE=1
+                    awk_vars="${awk_vars}-v DEBUG_MODE=1 "
+                fi
+                shift 1
+                ;;
+            --dev-mode)
+                if [ "${DEV_MODE}" -eq 0 ]; then
+                    DEV_MODE=1
+                    awk_vars="${awk_vars}-v DEV_MODE=1 "
+                fi
                 shift 1
                 ;;
             -i | --in-place)
@@ -180,8 +226,9 @@ main() {
         exit 1
     fi
 
-    # Prepare tmp directory, assume at this point spfmt will be invoked.
-    create_tmp_directory
+    # Prepare tmp working directory.
+    # Mus be created everytime, does not persist after spfmt executes.
+    create_working_directory
 
     #============#
     # CALL SPFMT #
@@ -192,11 +239,11 @@ main() {
     # *
     # * Because stdin is usually the spfmt awk progam, in order to make room for
     # * the users stdin arguments spfmt will be written to a tmp file and then
-    # * passed as a file arg through awk.
+    # * passed as a file arg through to awk.
     # */
     if [ -z "${awk_files}" ] && [ ! -t 0 ]; then
         awk_temp_file=$(mktemp) || {
-            printf "[ERROR] Failed to create temporary file with mktemp.\n" >&2
+            printf "[ERROR] Failed to create temporary spfmt file with mktemp.\n" >&2
             exit 1
         }
 
@@ -210,7 +257,9 @@ main() {
 
     # Otherwise handle files normally using embedded AWK program.
     else
-        # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/include spaces.
+        echo "awk -v OUTPUT_PATH=${TMP_DIR} ${awk_vars} -f ${awk_temp_file}"
+
+        # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/not split spaces.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f - ${awk_files}
     fi
 

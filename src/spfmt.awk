@@ -25,18 +25,19 @@ BEGIN {
 
     # Handle help and version options first, which exit early.
     if (show_help) {
-        if (DEBUG_MODE) {
+        if (DEV_MODE) {
             print "[DEBUG] Help requested."
         }
 
         print_help()
-    }
-    else if (show_version) {
-        if (DEBUG_MODE) {
+    } else if (show_version) {
+        if (DEV_MODE) {
             print "[DEBUG] Version requested."
         }
 
         print_version()
+    } else if (DEV_MODE) {
+        print "[DEBUG] Starting spfmt"
     }
 
     #=======================#
@@ -101,7 +102,7 @@ BEGIN {
     }
 
     #/**
-    # * Should always get an output path at cli/runtime, but if not assume
+    # * Should always get an output path from cli/at runtime, but if not assume
     # * /var/tmp/ for fallback, this is not a great option but lets spfmt run.
     # */
     if(!OUTPUT_PATH) {
@@ -137,7 +138,8 @@ BEGIN {
             if (indent_size_overriden == 0) {
                 print "[DEBUG] No supplied indent size from CLI." > "/dev/stderr"
             }
-            print "[DEBUG] Attempting to load .editorconfig file." > "/dev/stderr"
+            print "[DEBUG] Attempting to load .editorconfig file before resorting to defaults." \
+                > "/dev/stderr"
         }
 
         # Looks for a .editorconfig and only updates params not passed via CLI.
