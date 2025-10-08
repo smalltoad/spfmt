@@ -57,22 +57,32 @@ trap 'preform_traps' EXIT INT TERM
 # SPFMT TMP DIRECTORY #
 #=====================#
 
+# Actual tmp dir to use. Gets populated based on system binaries.
+TMP_DIR=""
 # In the event mktemp is not on system.
 TMP_DIR_FALLBACK="/var/tmp/spfmt"
-TMP_DIR=""
 
 # Temporary working dir to store files while preforming atomic operations.
 create_working_directory() {
     # Try mktemp first, else fall back to PID-based approach.
     if command -v mktemp >/dev/null 2>&1; then
+        if [ "${DEV_MODE}" -eq 1 ]; then
+            printf "[DEBUG] mktemp binary found on system.\n"
+        fi
+
         TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
             # If mktemp does not succeed, resort to UNSAFE fallback of using /var/tmp...
-            printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
-            mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
+            if [ "${DEV_MODE}" -eq 1 ]; then
+                printf "[WARNING] mktemp failed? resorting to fallback directory.\n"
+            fi
+            TMP_DIR="${TMP_DIR_FALLBACK}.$$"
+            mkdir -p "${TMP_DIR}" 2>/dev/null
         }
     else
         # If mktemp does not exist, resort to fallback.
-        TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
+        printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
+        TMP_DIR="${TMP_DIR_FALLBACK}.$$"
+        TMP_DIR=$(mkdir -p "${TMP_DIR}" 2>/dev/null)
     fi
 
     add_trap "rm -rf '${TMP_DIR}'"
@@ -88,7 +98,7 @@ create_working_directory() {
 DEBUG_LEVEL=0
 DEBUG_MODE=0
 DEV_MODE=0
-# Stores passed files, files don't need a flag.
+
 awk_files=""
 awk_vars=""
 
@@ -164,8 +174,7 @@ handle_s() {
     esac
 }
 
-main() {
-
+parse_cli() {
     while [ $# -gt 0 ]; do
         case "$1" in
             # If help was requested, format the correct awk command for help.
@@ -228,21 +237,17 @@ main() {
                 ;;
         esac
     done
+}
 
+ensure_inputs() {
     # Immediate bail if both stdin and files were provided.
     if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
         echo "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously."
         exit 1
     fi
+}
 
-    # Prepare tmp working directory.
-    # Mus be created everytime, does not persist after spfmt executes.
-    create_working_directory
-
-    #============#
-    # CALL SPFMT #
-    #============#
-
+spfmt() {
     #/**
     # * First if statement handles stdin if in a terminal AND no files were passed.
     # *
@@ -271,6 +276,23 @@ main() {
         # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/not split spaces.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f - ${awk_files}
     fi
+}
+
+main() {
+    # Parse cli arguments immediately.
+    parse_cli "$@"
+
+    # If stdin/files were passed, bails.
+    ensure_inputs
+
+    #/**
+    # * Prepare tmp working directory. Must be created everytime.
+    # * Working dir gets del on exit and does not persist after spfmt executes.
+    # */
+    create_working_directory
+
+    # Construct and call spfmt.
+    spfmt
 
     # Exit with spfmts exit code.
     exit $?
