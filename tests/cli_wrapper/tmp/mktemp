@@ -1,17 +1,15 @@
 #!/bin/bash
 
 # Happy path where mktemp is on system and worked
-if [ "${MOCK_PATH}" -eq 1 ]; then
+if [ "${MOCK_MKTEMP}" -eq 1 ]; then
     echo ./tmp/path_1
     exit 0
-# Middle path where mktemp is on system and failed
-elif [ "${MOCK_PATH}" -eq 2 ]; then
-    echo ./tmp/path_2
-    exit 0
+# Middle path where mktemp is on system but failed
+elif [ "${MOCK_MKTEMP}" -eq 2 ]; then
+    exit 1
 # Abnormal path where mktemp is not on system
-elif [ "${MOCK_PATH}" -eq 3 ]; then
-    echo ./tmp/path_3
-    exit 0
+elif [ "${MOCK_MKTEMP}" -eq 3 ]; then
+    exit 1
 fi
 exit 1
 

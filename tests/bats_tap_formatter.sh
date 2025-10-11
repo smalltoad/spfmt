@@ -4,8 +4,9 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: Simple BATS TAP formatter. Uses color to convey pass/fail in tty.
+# Description:
+# Simple BATS TAP formatter. Uses color to convey pass/fail in tty.
+#
 # File: bats_formatter.
 # License: GNU GPLv3
 

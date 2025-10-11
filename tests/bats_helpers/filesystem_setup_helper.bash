@@ -9,6 +9,7 @@
 # File: filesystem_setup_helper.bash
 # License: GNU GPLv3
 
+# Targeted helper in test_find_editorconfig.bats to set up a mock filesystem.
 filesystem_setup() {
     before="$1" # Integer.
     after="$2"  # Integer.
@@ -21,9 +22,9 @@ filesystem_setup() {
     done
 
     #/**
-    # * Create folder that will house .editorconfig, NOTE that naming should matter!
-    # * Test harnesses (such as find_editorconfig_harness.awk) should have logic to
-    # * pass/fail bases on some hint in the file name.
+    # Create folder that will house .editorconfig, NOTE that naming should matter!
+    # Test harnesses (such as find_editorconfig_harness.awk) should have logic to
+    # pass/fail bases on some hint in the file name.
     # */
     input="${input}/${target}"
     mkdir "${input}"

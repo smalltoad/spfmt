@@ -29,72 +29,109 @@
 # SET UP #
 #========#
 
-# File containing FUT
-script="${BATS_TEST_DIRNAME}/../../../src/cli_wrapper.sh"
+# Boilerplate load to get helper with known paths.
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../tests/bats_helpers")/sourcing_test_helper.bash"
 
-# Harness to call specific FUT
-harness="../harnesses/create_working_directory_harness.bats"
-
-# BATS helpers
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
-
-# Color sourcing must live outside setup() to be available in current env.
-. "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
-
-setup() {
-    . "${script}"
-
-    add_trap() {
-        TRAP_COMMAND="$1"
-        echo "[DEBUG] add_trap called with: $1" >&3
-    }
-}
+source_script "cli_wrapper.sh"
+source_harness "create_working_directory_harness.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
+    # Mock mktemp binary that gets added to path.
     cat >"${BATS_TEST_DIRNAME}/../tmp/mktemp" <<'EOF'
 #!/bin/bash
 
 # Happy path where mktemp is on system and worked
-if [ "${MOCK_PATH}" -eq 1 ]; then
+if [ "${MOCK_MKTEMP}" -eq 1 ]; then
     echo ./tmp/path_1
     exit 0
-# Middle path where mktemp is on system and failed
-elif [ "${MOCK_PATH}" -eq 2 ]; then
-    echo ./tmp/path_2
-    exit 0
+# Middle path where mktemp is on system but failed
+elif [ "${MOCK_MKTEMP}" -eq 2 ]; then
+    exit 1
 # Abnormal path where mktemp is not on system
-elif [ "${MOCK_PATH}" -eq 3 ]; then
-    echo ./tmp/path_3
-    exit 0
+elif [ "${MOCK_MKTEMP}" -eq 3 ]; then
+    exit 1
 fi
 exit 1
 
 EOF
 
-    chmod +x "${BATS_TEST_DIRNAME}/../tmp/mktemp"
+    # Mock command binary that gets added to path.
+    cat >"${BATS_TEST_DIRNAME}/../tmp/command" <<'EOF'
+#!/bin/bash
 
-    # Prepend mock directory to PATH
-    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
+# Happy path where the binary is on path
+if [ "${MOCK_COMMAND}" -eq 1 ]; then
+    exit 0
+fi
+# Abnormal path where BINARY is not on system
+exit 1
+
+EOF
+
+    chmod +x "${BATS_TEST_DIRNAME}/../tmp/mktemp"
+    chmod +x "${BATS_TEST_DIRNAME}/../tmp/command"
 }
 
 teardown_file() {
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 @test "create_working_directory creates the perfered working dir when mktemp is present and works" {
-    export MOCK_PATH=1
+    export MOCK_COMMAND=1 # command finds mktemp
+    export MOCK_MKTEMP=1  # mktemp returns 0
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     # Not using run key word intentionally. Allows for variable capture.
-    create_working_directory
-
-    echo "TMP_DIR: $TMP_DIR" >&3
+    create_working_directory || return 1
 
     # Verify TMP_DIR was set to what our mock returned
-    [ "${TMP_DIR}" = "./tmp/path_1" ]
+    [[ "${TMP_DIR}" = *"./tmp/path_1"* ]] || {
+        printf "[FAIL] Unexpected path %s returned from mktemp" "${TMP_DIR}"
+        return 1
+    }
 
     # Verify the trap was added for cleanup
-    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]]
+    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
+        printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
+        return 1
+    }
+}
 
+@test "create_working_directory results to fallback when mktemp is present but fails" {
+    export MOCK_COMMAND=1 # command finds mktemp
+    export MOCK_MKTEMP=2  # mktemp returns non-zero
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
+
+    create_working_directory || return 1
+
+    [[ "${TMP_DIR}" = "/var/tmp/spfmt."* ]] || {
+        printf "[FAIL] Unexpected path %s returned from mktemp" "${TMP_DIR}"
+        return 1
+    }
+
+    # Verify the trap was added for cleanup
+    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
+        printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
+        return 1
+    }
+}
+
+@test "create_working_directory results to fallback when mktemp is unavailable" {
+    export MOCK_COMMAND=1 # command can't find mktemp
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
+
+    create_working_directory || return 1
+
+    [[ "${TMP_DIR}" = "/var/tmp/spfmt."* ]] || {
+        printf "[FAIL] Unexpected path %s returned from mktemp." "${TMP_DIR}"
+        return 1
+    }
+
+    # Verify the trap was added for cleanup
+    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
+        printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
+        return 1
+    }
 }

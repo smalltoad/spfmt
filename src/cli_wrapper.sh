@@ -95,7 +95,7 @@ create_working_directory() {
 # Debug level maps to the verbosity modes:
 # - debug mode(1)
 # - dev mode (2)
-DEBUG_LEVEL=0
+DEBUG_LEVEL=0 # the number of d's
 DEBUG_MODE=0
 DEV_MODE=0
 
@@ -249,7 +249,7 @@ ensure_inputs() {
 
 spfmt() {
     #/**
-    # * First if statement handles stdin if in a terminal AND no files were passed.
+    # * First if-statement handles stdin if in a terminal AND no files were passed.
     # *
     # * Because stdin is usually the spfmt awk progam, in order to make room for
     # * the users stdin arguments spfmt will be written to a tmp file and then
