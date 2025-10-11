@@ -42,66 +42,69 @@ setup_file() {
     cat >"${BATS_TEST_DIRNAME}/../tmp/mktemp" <<'EOF'
 #!/bin/bash
 
-# Happy path where mktemp is on system and worked
-if [ "${MOCK_MKTEMP}" -eq 1 ]; then
+# Happy path where mktemp workeds
+if [[ "${MOCK_MKTEMP}" -eq 1 ]]; then
     echo ./tmp/path_1
     exit 0
-# Middle path where mktemp is on system but failed
-elif [ "${MOCK_MKTEMP}" -eq 2 ]; then
-    exit 1
 # Abnormal path where mktemp is not on system
-elif [ "${MOCK_MKTEMP}" -eq 3 ]; then
+elif [[ "${MOCK_MKTEMP}" -eq 2 ]]; then
     exit 1
 fi
+
 exit 1
 
 EOF
 
-    # Mock command binary that gets added to path.
-    cat >"${BATS_TEST_DIRNAME}/../tmp/command" <<'EOF'
+    # Mock mkdir binary that gets added to path.
+    cat >"${BATS_TEST_DIRNAME}/../tmp/mkdir" <<'EOF'
 #!/bin/bash
 
-# Happy path where the binary is on path
-if [ "${MOCK_COMMAND}" -eq 1 ]; then
+# Happy path where mkdir works
+if [[ "${MOCK_MKDIR}" -eq 1 ]]; then
+    echo "[MOCK MKDIR] Returning pass" >&2
     exit 0
+# Abnormal path where mkdir fails
+elif [[ "${MOCK_MKDIR}" -eq 2 ]]; then
+    echo "[MOCK MKDIR] Returning failure" >&2
+    exit 1
 fi
-# Abnormal path where BINARY is not on system
+
 exit 1
 
 EOF
 
     chmod +x "${BATS_TEST_DIRNAME}/../tmp/mktemp"
-    chmod +x "${BATS_TEST_DIRNAME}/../tmp/command"
+    chmod +x "${BATS_TEST_DIRNAME}/../tmp/mkdir"
 }
 
 teardown_file() {
     log_test_end
 }
 
-@test "create_working_directory creates the perfered working dir when mktemp is present and works" {
-    export MOCK_COMMAND=1 # command finds mktemp
-    export MOCK_MKTEMP=1  # mktemp returns 0
+@test "create_working_directory creates the perfered working dir when mktemp is present and succeeds" {
+    export MOCK_MKTEMP=1 # mktemp returns 0.
+    export MOCK_MKDIR=1  # mkdir returns 0.
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     # Not using run key word intentionally. Allows for variable capture.
     create_working_directory || return 1
 
-    # Verify TMP_DIR was set to what our mock returned
-    [[ "${TMP_DIR}" = *"./tmp/path_1"* ]] || {
+    # Verify TMP_DIR was set to what our mock returned.
+    [[ "${TMP_DIR}" = "./tmp/path_1" ]] || {
         printf "[FAIL] Unexpected path %s returned from mktemp" "${TMP_DIR}"
         return 1
     }
 
-    # Verify the trap was added for cleanup
+    # Verify the trap was added for cleanup.
     [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
         printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
         return 1
     }
 }
 
-@test "create_working_directory results to fallback when mktemp is present but fails" {
-    export MOCK_COMMAND=1 # command finds mktemp
-    export MOCK_MKTEMP=2  # mktemp returns non-zero
+@test "create_working_directory resorts to /var/tmp/spfmt when mktemp is present but fails" {
+    export MOCK_MKTEMP=2 # mktemp returns non-zero.
+    export MOCK_MKDIR=1  # mkdir returns 0.
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     create_working_directory || return 1
@@ -118,13 +121,32 @@ teardown_file() {
     }
 }
 
-@test "create_working_directory results to fallback when mktemp is unavailable" {
-    export MOCK_COMMAND=1 # command can't find mktemp
+@test "create_working_directory resorts to /var/tmp/spfmt when mktemp is unavailable and mkdir succeeds" {
+    export MOCK_MKDIR=1 # mkdir returns zero.
+    # Remove mktemp from path so command can't find it.
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     create_working_directory || return 1
 
     [[ "${TMP_DIR}" = "/var/tmp/spfmt."* ]] || {
+        printf "[FAIL] Unexpected path %s returned from mktemp." "${TMP_DIR}"
+        return 1
+    }
+
+    # Verify the trap was added for cleanup
+    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
+        printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
+        return 1
+    }
+}
+
+@test "create_working_directory resorts to /tmp when mktemp is unavailable and mkdir fails" {
+    export MOCK_MKDIR=2 # mkdir returns non-zero.
+    # Remove mktemp from path so command can't find it.
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp)"
+    create_working_directory || return 1
+
+    [[ "${TMP_DIR}" = "/tmp" ]] || {
         printf "[FAIL] Unexpected path %s returned from mktemp." "${TMP_DIR}"
         return 1
     }

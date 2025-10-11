@@ -82,7 +82,10 @@ create_working_directory() {
         # If mktemp does not exist, resort to fallback.
         printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
         TMP_DIR="${TMP_DIR_FALLBACK}.$$"
-        TMP_DIR=$(mkdir -p "${TMP_DIR}" 2>/dev/null)
+        mkdir -p "${TMP_DIR}" 2>/dev/null || {
+            printf "[WARNING] mkdir failed? resorting to non-persistance tmp directory.\n"
+            TMP_DIR="/tmp"
+        }
     fi
 
     add_trap "rm -rf '${TMP_DIR}'"
@@ -123,12 +126,10 @@ handle_d() {
 
     if [ "${DEBUG_LEVEL}" -gt 0 ] && [ "${DEBUG_MODE}" -eq 0 ]; then
         DEBUG_MODE=1
-        awk_vars="${awk_vars}-v DEBUG_MODE=1 "
     fi
 
     if [ "${DEBUG_LEVEL}" -gt 1 ] && [ "${DEV_MODE}" -eq 0 ]; then
         DEV_MODE=1
-        awk_vars="${awk_vars}-v DEV_MODE=1 "
     fi
 }
 
@@ -194,14 +195,12 @@ parse_cli() {
             --debug)
                 if [ "${DEBUG_MODE}" -eq 0 ]; then
                     DEBUG_MODE=1
-                    awk_vars="${awk_vars}-v DEBUG_MODE=1 "
                 fi
                 shift 1
                 ;;
             --dev-mode)
                 if [ "${DEV_MODE}" -eq 0 ]; then
                     DEV_MODE=1
-                    awk_vars="${awk_vars}-v DEV_MODE=1 "
                 fi
                 shift 1
                 ;;
@@ -267,14 +266,12 @@ spfmt() {
         # Write the AWK program to the temporary file.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" >"${awk_temp_file}"
 
-        awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f "${awk_temp_file}"
+        awk -v OUTPUT_PATH="${TMP_DIR}" -v DEBUG_MODE="${DEBUG_MODE}" -v DEV_MODE="${DEV_MODE}" ${awk_vars} -f "${awk_temp_file}"
 
     # Otherwise handle files normally using embedded AWK program.
     else
-        echo "awk -v OUTPUT_PATH=${TMP_DIR} ${awk_vars} -f ${awk_temp_file}"
-
         # Intentionally NOT QUOTED, quotes will make awk believe these are all file names/not split spaces.
-        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -v OUTPUT_PATH="${TMP_DIR}" ${awk_vars} -f - ${awk_files}
+        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -v OUTPUT_PATH="${TMP_DIR}" -v DEBUG_MODE="${DEBUG_MODE}" -v DEV_MODE="${DEV_MODE}" ${awk_vars} -f - ${awk_files}
     fi
 }
 
@@ -282,12 +279,12 @@ main() {
     # Parse cli arguments immediately.
     parse_cli "$@"
 
-    # If stdin/files were passed, bails.
+    # If stdin/files were both passed, no arguments, then bail.
     ensure_inputs
 
     #/**
     # * Prepare tmp working directory. Must be created everytime.
-    # * Working dir gets del on exit and does not persist after spfmt executes.
+    # * Working dir gets removed on exit and does not persist after spfmt executes.
     # */
     create_working_directory
 
