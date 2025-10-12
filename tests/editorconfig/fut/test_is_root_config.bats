@@ -71,9 +71,18 @@ setup_file() {
     mocked_script=$(basename -- "${mocked_script_path}")
 }
 
+setup() {
+    base="$(mktemp -d "/tmp/is_root_config_test.XXXXXX")"
+    input="${base}"
+}
+
 teardown_file() {
     rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
+teardown() {
+    rm -rf "${base:-}"
 }
 
 #============#
@@ -106,7 +115,6 @@ teardown_file() {
 
 @test "[TEST] _is_root_config returns 1 for empty editorconfig" {
     # Test case that proves robustness, guarding against empty/null input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     expected="1"
@@ -116,13 +124,10 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] _is_root_config returns 0 for editorconfig path with only root = 1" {
     # Test case that proves robustness, guarding against empty/null input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     echo "root = true" >"${input}"
@@ -133,13 +138,10 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] _is_root_config returns 0 and loops correctly for editorconfig path with some data and root = 1" {
     # Test case that proves robustness, guarding against empty/null input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "GARBAGE DATA\nroot = true\n" >"${input}"
@@ -150,13 +152,10 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] _is_root_config returns 0 and early exits for editorconfig path with root = 1 and some data" {
     # Test case that proves robustness, guarding against empty/null input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "root = true\nGARBAGE DATA\n" >"${input}"
@@ -167,6 +166,4 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }

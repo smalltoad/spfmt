@@ -85,9 +85,18 @@ setup_file() {
     mocked_script=$(basename -- "${mocked_script_path}")
 }
 
+setup() {
+    base="$(mktemp -d "/tmp/test_parse_editorconfig.XXXXXX")"
+    export input="${base}"
+}
+
 teardown_file() {
-    #rm -rf "${mocked_script_path}"
+    rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+}
+
+teardown() {
+    rm -rf "${base:-}"
 }
 
 #============#
@@ -108,7 +117,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig returns nothing for non-existant path" {
     # Test case that proves robustness, guarding against empty/null input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     expected=":"
 
@@ -121,7 +129,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig can find AWK section and return correct values when there is only an AWK section" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space" >"${input}"
@@ -138,7 +145,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig can find AWK section and return correct values when AWK sections comes after another" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[txt]\nindent_size = 4\nindent_char = shift\n[awk]\nindent_size = 2\nindent_char = space" >"${input}"
@@ -153,7 +159,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig can find AWK section and return correct values when AWK sections comes before another" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
@@ -168,7 +173,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig can find AWK section and return correct values when there is both good and bad data" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "bad data\n[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
@@ -183,7 +187,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig does not replace previously set indent and character values" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
@@ -200,7 +203,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig does not replace runtime overrides on indent and character values" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"
@@ -217,7 +219,6 @@ teardown_file() {
 
 @test "[TEST] _parse_editorconfig does not parse more when defaults are all overriden" {
     # Test case that proves parsing of expected input.
-    input=$(mktemp -d)
     input="${input}/.editorconfig"
     touch "${input}"
     printf "[awk]\nindent_size = 2\nindent_char = space\n\n[txt]\nindent_size = 4\nindent_char = shift" >"${input}"

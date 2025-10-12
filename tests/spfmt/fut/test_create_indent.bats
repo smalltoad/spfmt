@@ -48,7 +48,7 @@ setup_file() {
 }
 
 teardown_file() {
-    #rm -rf "${mocked_script_path}"
+    rm -rf "${mocked_script_path}"
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
