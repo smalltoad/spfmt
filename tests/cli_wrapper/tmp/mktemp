@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Happy path where mktemp workeds
+# Happy path where mktemp works
 if [[ "${MOCK_MKTEMP}" -eq 1 ]]; then
     echo ./tmp/path_1
     exit 0

@@ -42,7 +42,7 @@ setup_file() {
     cat >"${BATS_TEST_DIRNAME}/../tmp/mktemp" <<'EOF'
 #!/bin/bash
 
-# Happy path where mktemp workeds
+# Happy path where mktemp works
 if [[ "${MOCK_MKTEMP}" -eq 1 ]]; then
     echo ./tmp/path_1
     exit 0
@@ -84,6 +84,7 @@ teardown_file() {
 @test "create_working_directory creates the perfered working dir when mktemp is present and succeeds" {
     export MOCK_MKTEMP=1 # mktemp returns 0.
     export MOCK_MKDIR=1  # mkdir returns 0.
+    export MOCK_COMMAND=0
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     # Not using run key word intentionally. Allows for variable capture.
@@ -105,6 +106,7 @@ teardown_file() {
 @test "create_working_directory resorts to /var/tmp/spfmt when mktemp is present but fails" {
     export MOCK_MKTEMP=2 # mktemp returns non-zero.
     export MOCK_MKDIR=1  # mkdir returns 0.
+    export MOCK_COMMAND=0
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
     create_working_directory || return 1
@@ -121,8 +123,29 @@ teardown_file() {
     }
 }
 
+@test "create_working_directory resorts to /tmp when mktemp is present but fails and mkdir fails" {
+    export MOCK_MKTEMP=2 # mktemp returns non-zero.
+    export MOCK_MKDIR=2  # mkdir returns 0.
+    export MOCK_COMMAND=0
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
+
+    create_working_directory || return 1
+
+    [[ "${TMP_DIR}" = "/tmp" ]] || {
+        printf "[FAIL] Unexpected path %s returned from mktemp" "${TMP_DIR}"
+        return 1
+    }
+
+    # Verify the trap was added for cleanup
+    [[ "$TRAP_COMMAND" == *"$TMP_DIR"* ]] || {
+        printf "[FAIL] Unexpected path %s trapped." "${TMP_DIR}"
+        return 1
+    }
+}
+
 @test "create_working_directory resorts to /var/tmp/spfmt when mktemp is unavailable and mkdir succeeds" {
     export MOCK_MKDIR=1 # mkdir returns zero.
+    export MOCK_COMMAND=1
     # Remove mktemp from path so command can't find it.
     export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
 
@@ -143,7 +166,8 @@ teardown_file() {
 @test "create_working_directory resorts to /tmp when mktemp is unavailable and mkdir fails" {
     export MOCK_MKDIR=2 # mkdir returns non-zero.
     # Remove mktemp from path so command can't find it.
-    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp)"
+    export PATH="$(realpath ${BATS_TEST_DIRNAME}/../tmp):$PATH"
+
     create_working_directory || return 1
 
     [[ "${TMP_DIR}" = "/tmp" ]] || {

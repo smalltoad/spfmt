@@ -12,7 +12,7 @@
 # Includes env file which exports configuration variables.
 -include project_env.mk
 
-.PHONY: all clean install dist dev show-sources
+.PHONY: all clean install dist dev show-sources test
 
 SHELL := /bin/sh
 

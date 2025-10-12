@@ -69,13 +69,18 @@ setup_file() {
 }
 
 setup() {
-    # All testing directories are based in /tmp folder.
-    export input=$(mktemp -d "/tmp/find_editorconfig_test.XXXXXX")
+    # Save base off, input gets modified directly by filesystem_setup_helper.
+    base="$(mktemp -d "/tmp/find_editorconfig_test.XXXXXX")"
+    export input="${base}"
 }
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
     echo "[END]${BATS_TEST_FILENAME##*/}" >&3
+}
+
+teardown() {
+    rm -rf "${base:-}"
 }
 
 #============#
@@ -105,64 +110,42 @@ teardown_file() {
 }
 
 @test "[TEST] find_editorconfig returns correct path when file is real and readable" {
-    input="${input}/real_readable"
-    mkdir "${input}"
+    filesystem_setup 0 0 "real_readable"
+
     expected="${input}/.editorconfig"
     touch "${expected}"
-    env="MOCK_TEST_FILE_RESULT=\"true\" MOCK_TEST_READABLE_RESULT=\"true\""
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
         -i "${input}" \
-        -x "${expected}" \
-        -e "${env}"
-
-    rm -rf "${input}"
+        -x "${expected}"
 }
 
 @test "[TEST] find_editorconfig returns correct path when file 1 directory deep, is real and readable" {
-    input="${input}/real_readable"
-    mkdir "${input}"
+    filesystem_setup 1 0 "real_readable"
+
     expected="${input}/.editorconfig"
-    input="${input}/dummy"
-    mkdir "${input}"
     touch "${expected}"
-    env="MOCK_TEST_FILE_RESULT=\"true\" MOCK_TEST_READABLE_RESULT=\"true\""
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
         -i "${input}" \
-        -x "${expected}" \
-        -e "${env}"
-
-    rm -rf "${input}"
+        -x "${expected}"
 }
 
 @test "[TEST] find_editorconfig returns correct path when file is very deep in the FS, is real and readable" {
-    input="${input}/real_readable"
-    mkdir "${input}"
-    expected="${input}/.editorconfig"
-    input="${input}/dummy"
-    mkdir "${input}"
-    input="${input}/dummy"
-    mkdir "${input}"
-    input="${input}/dummy"
-    mkdir "${input}"
-    input="${input}/dummy"
-    mkdir "${input}"
+    filesystem_setup 4 0 "real_readable"
+
+    expected="${location}/.editorconfig"
     touch "${expected}"
-    env="MOCK_TEST_FILE_RESULT=\"true\" MOCK_TEST_READABLE_RESULT=\"true\""
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
         -i "${input}" \
-        -x "${expected}" \
-        -e "${env}"
-
-    rm -rf "${input}"
+        -x "${expected}"
 }
 
 @test "[TEST] find_editorconfig returns empty string when .editorconfig file is real but unreadable" {
@@ -175,8 +158,6 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x ""
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] find_editorconfig returns empty string when .editorconfig file is not a real file" {
@@ -189,8 +170,6 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x ""
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] find_editorconfig returns correct path when file is high in the filesystem, is real and readable" {
@@ -204,8 +183,6 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }
 
 @test "[TEST] find_editorconfig returns correct path when file is deep in the filesystem, is real and readable" {
@@ -219,6 +196,4 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rm -rf "${input}"
 }

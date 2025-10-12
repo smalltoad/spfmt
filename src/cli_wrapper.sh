@@ -5,12 +5,12 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 #/**
-# * DESCRIPTION:
-# * CLI wrapper for spfmt, provides CLI specific handling while obfuscating AWK
-# * cli options away from the user.
-# *
-# * FILE: cli_wrapper.sh
-# * LICESNE: GNU GPLv3
+# DESCRIPTION:
+# CLI wrapper for spfmt, provides CLI specific handling while obfuscating AWK
+# cli options away from the user.
+#
+# FILE: cli_wrapper.sh
+# LICESNE: GNU GPLv3
 # */
 
 #===============#
@@ -31,8 +31,8 @@ EOF
 traps=""
 
 #/**
-# * Multiple traps may be needed depending on control flow.
-# * add_trap handles keeping track of all traps to preform a full clean-up.
+# Multiple traps may be needed depending on control flow.
+# add_trap handles keeping track of all traps to preform a full clean-up.
 # */
 add_trap() {
     if [ -n "${traps}" ]; then
@@ -65,7 +65,7 @@ TMP_DIR_FALLBACK="/var/tmp/spfmt"
 # Temporary working dir to store files while preforming atomic operations.
 create_working_directory() {
     # Try mktemp first, else fall back to PID-based approach.
-    if command -v mktemp >/dev/null 2>&1; then
+    if command_check mktemp 2>/dev/null; then
         if [ "${DEV_MODE}" -eq 1 ]; then
             printf "[DEBUG] mktemp binary found on system.\n"
         fi
@@ -76,19 +76,31 @@ create_working_directory() {
                 printf "[WARNING] mktemp failed? resorting to fallback directory.\n"
             fi
             TMP_DIR="${TMP_DIR_FALLBACK}.$$"
-            mkdir -p "${TMP_DIR}" 2>/dev/null
+            mkdir -p "${TMP_DIR}" 2>/dev/null || {
+                printf "[WARNING] mkdir failed? resorting to base /tmp directory.\n"
+                TMP_DIR="/tmp"
+            }
         }
     else
         # If mktemp does not exist, resort to fallback.
         printf "[WARNING] Consider installing mktemp for a safer tmp directory.\n"
         TMP_DIR="${TMP_DIR_FALLBACK}.$$"
         mkdir -p "${TMP_DIR}" 2>/dev/null || {
-            printf "[WARNING] mkdir failed? resorting to non-persistance tmp directory.\n"
+            printf "[WARNING] mkdir failed? resorting to base /tmp directory.\n"
             TMP_DIR="/tmp"
         }
     fi
 
     add_trap "rm -rf '${TMP_DIR}'"
+}
+
+# Wrapper command to help with mocking the command builtin.
+command_check() {
+    ret="$(command -v -- "$1" 2>/dev/null || :)"
+    if [ -n "${ret}" ]; then
+        return 0
+    fi
+    return 1
 }
 
 #============#
@@ -238,21 +250,37 @@ parse_cli() {
     done
 }
 
-ensure_inputs() {
-    # Immediate bail if both stdin and files were provided.
-    if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
-        echo "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously."
-        exit 1
+#==================#
+# PREFLIGHT CHECKS #
+#==================#
+
+# spfmt needs at least 1 argument supplied that is a file.
+arguments_supplied() {
+    if [ ! -n "$1" ]; then
+        printf "[ERROR] spfmt requires at least a file argument.\n"
+        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
+        return 1
     fi
+    return 0
+}
+
+# spfmt does not (currently) handle files and stdin simultaneously.
+ensure_inputs() {
+    if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
+        printf "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously.\n"
+        printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
+        return 1
+    fi
+    return 0
 }
 
 spfmt() {
     #/**
-    # * First if-statement handles stdin if in a terminal AND no files were passed.
-    # *
-    # * Because stdin is usually the spfmt awk progam, in order to make room for
-    # * the users stdin arguments spfmt will be written to a tmp file and then
-    # * passed as a file arg through to awk.
+    # First if-statement handles stdin if in a terminal AND no files were passed.
+    #
+    # Because stdin is usually the spfmt awk progam, in order to make room for
+    # the users stdin arguments spfmt will be written to a tmp file and then
+    # passed as a file arg through to awk.
     # */
     if [ -z "${awk_files}" ] && [ ! -t 0 ]; then
         awk_temp_file=$(mktemp) || {
@@ -275,16 +303,20 @@ spfmt() {
     fi
 }
 
+# Main logic flow that builds up to spfmt execution.
 main() {
+    # No arguments, then bail.
+    arguments_supplied "$1" || exit 1
+
     # Parse cli arguments immediately.
     parse_cli "$@"
 
-    # If stdin/files were both passed, no arguments, then bail.
-    ensure_inputs
+    # If stdin/files were both passed, alert user then bail.
+    ensure_inputs || exit 1
 
     #/**
-    # * Prepare tmp working directory. Must be created everytime.
-    # * Working dir gets removed on exit and does not persist after spfmt executes.
+    # Prepare tmp working directory. Must be created everytime.
+    # Working dir gets removed on exit and does not persist after spfmt executes.
     # */
     create_working_directory
 
@@ -301,11 +333,11 @@ case "$(basename -- "$0")" in
         ;;
     *)
         #/**
-        # * Do nothing...
-        # *
-        # * Allows both:
-        # * 1. Script to be sourced WITHOUT execution.
-        # * 2. For testing via shellcheck.
+        # Do nothing...
+        #
+        # Allows both:
+        # 1. Script to be sourced WITHOUT execution.
+        # 2. For testing via shellcheck.
         # */
         ;;
 esac

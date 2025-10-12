@@ -29,7 +29,7 @@ filesystem_setup() {
     input="${input}/${target}"
     mkdir "${input}"
 
-    # Exposes location to append required files.
+    # Exposes location to append required files in caller.
     location="${input}"
 
     # Build up the directories before where .editorconfig lives.
