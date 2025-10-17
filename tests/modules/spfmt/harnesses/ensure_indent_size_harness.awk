@@ -11,5 +11,6 @@
 
 {
     effective["indent_size"] = indent_size
+
     print ensure_indent_size()
 }

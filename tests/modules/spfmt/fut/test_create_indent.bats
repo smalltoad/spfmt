@@ -9,20 +9,6 @@
 # File: test_create_indent.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function create_indent(    indent, i) {
-#     indent = ""
-#
-#     for (i = 0; i < level * indent_size; i++) {
-#         indent = indent indent_char
-#     }
-#
-#     return indent
-# }
-
 #========#
 # SET UP #
 #========#
