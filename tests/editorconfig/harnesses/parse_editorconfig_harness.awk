@@ -11,13 +11,16 @@
 
 {
     # These must match what is in the _parse_editorconfig function to get set.
-    indent_size
-    indent_char
+    effective["indent_char"] = indent_char
+    effective["indent_size"] = indent_size
+    overrides["indent_char"] = indent_char_overriden
+    overrides["indent_size"] = indent_size_overriden
 
     result = _parse_editorconfig($0)
-    print indent_size ":" indent_char
+    print effective["indent_size"] ":" effective["indent_char"]
 }
 
+# These stubs assume all lines are perfectly formatted.
 function strip_leading_whitespace(line) {
     return line
 }

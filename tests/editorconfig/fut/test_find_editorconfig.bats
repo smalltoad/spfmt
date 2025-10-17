@@ -4,51 +4,17 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS tests for the load_config_file function in the editorconfig.awk module.
+# Description:
+# BATS tests for the load_config_file function in the editorconfig.awk module.
+#
 # File: load_config_file_test.bats
 # License: GNU GPLv3
-
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function _find_editorconfig(start_dir,    _curr_path, _file_path_to_check, _cmd_file_check, _is_file, _cmd_read_check, _is_readable, _result, _parent_dir)
-# {
-#     _curr_path = start_dir
-#
-#     while (_curr_path != "/" && _curr_path != "") {
-#         _file_path_to_check = _curr_path "/.editorconfig"
-#
-#         _is_file = test_file(_file_path_to_check)
-#
-#         if (_is_file == 0) {
-#             _is_readable = test_readable(_file_path_to_check)
-#
-#             if (_is_readable == 0) {
-#                 return _file_path_to_check
-#             }
-#         }
-#         _parent_dir = get_parent_directory(start_dir)
-#
-#         if (_parent_dir == start_dir) {
-#             return ""
-#         }
-#
-#         _curr_path = _parent_dir
-#     }
-#
-#     return ""
-# }
 
 #========#
 # SET UP #
 #========#
 
-# AWK script containing FUT.
 script="editorconfig.awk"
-
-# Harness to call specific FUT.
 harness="find_editorconfig_harness.awk"
 
 # Used to set up the mock directory structure for tests.
@@ -87,7 +53,7 @@ teardown() {
 # TEST CASES #
 #============#
 
-@test "[TEST] find_editorconfig returns empty string when empty string is passed" {
+@test "[TEST] _find_editorconfig edge case of when no input is passed an empty string is returned" {
     input=""
     expected=""
 
@@ -98,7 +64,7 @@ teardown() {
         -x "${expected}"
 }
 
-@test "[TEST] find_editorconfig returns empty string when root is passed" {
+@test "[TEST] _find_editorconfig edge case of when root is reached and no config file is found the search terminates" {
     input="/"
     expected=""
 
@@ -109,7 +75,7 @@ teardown() {
         -x "${expected}"
 }
 
-@test "[TEST] find_editorconfig returns correct path when file is real and readable" {
+@test "[TEST] _find_editorconfig returns correct path when file is top level, real and readable" {
     filesystem_setup 0 0 "real_readable"
 
     expected="${input}/.editorconfig"

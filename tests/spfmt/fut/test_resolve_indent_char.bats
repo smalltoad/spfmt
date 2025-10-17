@@ -4,26 +4,9 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
 # Description: BATS tests for the resolve_indent_char function in the spfmt.awk module.
 # File: test_resolve_indent_char.bats
 # License: GNU GPLv3
-
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function resolve_indent_char() {
-#     if (indent_char == "space") {
-#         indent_char = " "
-#     } else if (indent_char == "tab") {
-#         indent_char = "\t"
-#     } else {
-#         return 1
-#     }
-#
-#     return 0
-# }
 
 #========#
 # SET UP #

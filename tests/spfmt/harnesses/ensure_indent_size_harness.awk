@@ -10,5 +10,6 @@
 # License: GNU GPLv3
 
 {
+    effective["indent_size"] = indent_size
     print ensure_indent_size()
 }

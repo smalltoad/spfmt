@@ -12,18 +12,18 @@
 {
     # Initialize in scope.
     current_level
-    indent_size
-    indent_char
+    effective["indent_size"]
+    effective["indent_char"]
 
     # Repalce stubs above with a passed mock value for testing.
     if (ENVIRON["MOCK_LEVEL"] != "") {
         current_level = ENVIRON["MOCK_LEVEL"]
     }
     if (ENVIRON["MOCK_INDENT_SIZE"] != "") {
-        indent_size = ENVIRON["MOCK_INDENT_SIZE"]
+        effective["indent_size"] = ENVIRON["MOCK_INDENT_SIZE"]
     }
     if (ENVIRON["MOCK_INDENT_CHAR"] != "") {
-        indent_char = ENVIRON["MOCK_INDENT_CHAR"]
+        effective["indent_char"] = ENVIRON["MOCK_INDENT_CHAR"]
     }
 
     print create_indent()

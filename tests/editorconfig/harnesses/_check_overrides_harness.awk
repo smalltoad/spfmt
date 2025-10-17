@@ -10,6 +10,13 @@
 # License: GNU GPLv3
 
 {
+    #/**
+    # Can't pass associative arrays directly through the CLI.
+    # Must set them within the harness instead.
+    # */
+    overrides["indent_char"] = indent_char_overriden
+    overrides["indent_size"] = indent_size_overriden
+
     # _check_overrides is a bitwise operation on all configurable values.
     _check_overrides()
 

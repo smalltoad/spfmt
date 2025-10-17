@@ -10,7 +10,9 @@
 # License: GNU GPLv3
 
 {
+    effective["indent_char"] = indent_char
+
     resolve_indent_char()
 
-    print indent_char
+    print effective["indent_char"]
 }

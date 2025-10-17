@@ -4,8 +4,9 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS tests for the create_working_directory function in the cli_wrapper script.
+# Description:
+# BATS tests for the create_working_directory function in the cli_wrapper script.
+#
 # File: test_check_overrides.bats
 # License: GNU GPLv3
 

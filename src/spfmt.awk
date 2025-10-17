@@ -40,30 +40,43 @@ BEGIN {
         print "[DEBUG] Spfmt awk program invoked!"
     }
 
+    #======================#
+    # CONFIGURATION VALUES #
+    #======================#
+
+    #/**
+    # Default config variables, overrideable via both CLI or .editorconfig file.
+    # Note that char is pre-resolved, meaning it is not 'space' but is ' '
+    # */
+    defaults["indent_size"] = 2
+    defaults["indent_char"] = " "
+
+    # These are the actual values that will be used during processing.
+    effective["indent_char"] = ""
+    effective["indent_size"] = 0
+
+    #/**
+    # Individual parameter override flags.
+    #
+    # These start at 0, indicating no parameters were passed/found before run time.
+    # If param is not null at start, means a value was passed and flag is flipped to 0.
+    # Otherwise, look for non-overriden params indiviudally in a .editorconfig file.
+    # Last resort is sane defaults set in defaults array if no .editorconfig
+    # file can be located.
+    # */
+    overrides["indent_char"] = 0
+    overrides["indent_size"] = 0
+
     #=======================#
     # CLI OVERRIDE CHECKING #
     #=======================#
 
-    # Default config variables, overrideable via both CLI or .editorconfig file.
-    default_indent_size = 4
-    default_indent_char = "space"
-
-    #/**
-    # * Individual parameter override flags.
-    # *
-    # * These start at 0, indicating no parameters were passed/found before run time.
-    # * If param is not null at start, means a value was passed and flag is flipped to 0.
-    # * Otherwise, look for non-overriden params indiviudally in a .editorconfig file.
-    # * Last resort is sane defaults set above if no .editorconfig file can be located.
-    # */
-    indent_char_overriden = 0
-    indent_size_overriden = 0
-
     # If the indent_char was set before runtime, try to resolve it or bail.
     if (indent_char) {
-        if (resolve_indent_char() == 0) {
-            indent_char_overriden = 1
+        effective["indent_char"] = indent_char
+        overrides["indent_char"] = 1
 
+        if (resolve_indent_char() == 0) {
             if (DEBUG_MODE) {
                 print "[DEBUG] CLI Supplied indent character has been accepted."
             }
@@ -76,9 +89,10 @@ BEGIN {
 
     # If the indent_size was set before runtime, ensure it is a number or bail.
     if (indent_size) {
-        if (ensure_indent_size() == 0) {
-            indent_size_overriden = 1
+        effective["indent_size"] = indent_size
+        overrides["indent_size"] = 1
 
+        if (ensure_indent_size() == 0) {
             if (DEBUG_MODE) {
                 print "[DEBUG] CLI Supplied indent size has been accepted."
             }
@@ -111,9 +125,6 @@ BEGIN {
     # GLOBALS #
     #=========#
 
-    # Temporary files for atomic writing is stored in OUTPUT_PATH.
-    #OUTPUT_PATH = "/var/tmp/spfmt/"
-
     # Current indentation level, used to track depth.
     current_level = 0
     previous_file = ""  # Explicitly initialize as empty string.
@@ -128,15 +139,15 @@ BEGIN {
     # * If no CLI parameters were passed for formatting then look for a
     # * .editorconfig file before resorting to sane defaults.
     # */
-    if (indent_char_overriden == 0 || indent_size_overriden == 0) {
+    if (overrides["indent_char"] == 0 || overrides["indent_size"] == 0) {
         if (DEBUG_MODE) {
-            if (indent_char_overriden == 0) {
+            if (overrides["indent_char"] == 0) {
                 print "[DEBUG] No supplied indent char from CLI." > "/dev/stderr"
             }
-            if (indent_size_overriden == 0) {
+            if (overrides["indent_size"] == 0) {
                 print "[DEBUG] No supplied indent size from CLI." > "/dev/stderr"
             }
-            print "[DEBUG] Attempting to load .editorconfig file before resorting to defaults." \
+            print "[DEBUG] Attempting to load .editorconfig file before resorting to any defaults." \
                 > "/dev/stderr"
         }
 
@@ -144,27 +155,27 @@ BEGIN {
         load_config_file()
 
         # Resort to sane defaults if no overrides provided via CLI or .editorconfig file.
-        if (indent_char_overriden == 0) {
+        if (overrides["indent_char"] == 0) {
             if (DEBUG_MODE) {
                 print "[DEBUG] No .editorconfig formatting options found for indent char." > "/dev/stderr"
             }
 
             # Indents will be a space.
-            indent_char = " "
+            effective["indent_char"] = defaults["indent_char"]
 
             if (DEBUG_MODE) {
                 print "[DEBUG] Resorting to sane default of space indentation." > "/dev/stderr"
             }
         }
-        if (indent_size_overriden == 0) {
+        if (overrides["indent_size"] == 0) {
             if (DEBUG_MODE) {
                 print "[DEBUG] No .editorconfig formatting options found for indent size." > "/dev/stderr"
             }
 
-            indent_size = "4"
+            effective["indent_size"] = defaults["indent_size"]
 
             if (DEBUG_MODE) {
-                print "[DEBUG] Resorting to sane default of indent size of 4" > "/dev/stderr"
+                print "[DEBUG] Resorting to sane default of indent size of 2" > "/dev/stderr"
             }
         }
     }
@@ -172,9 +183,9 @@ BEGIN {
     # Print final settings for formatting.
     if (DEBUG_MODE) {
         print "[DEBUG] Final formatting settings" > "/dev/stderr"
-        print "[DEBUG]     indent size: " indent_size > "/dev/stderr"
+        print "[DEBUG]     indent size: " effective["indent_size"] > "/dev/stderr"
         # TODO: Resolve this char back to a word rather than a char.
-        print "[DEBUG]     indent char: " indent_char > "/dev/stderr"
+        print "[DEBUG]     indent char: " effective["indent_char"] > "/dev/stderr"
         # TODO: Add configuration for line ending.
         # print "[DEBUG] line-ending: "
     }
@@ -376,8 +387,8 @@ function create_newlines(    _newlines) {
 function create_indent(    indent, i) {
     indent = ""
 
-    for (i = 0; i < current_level * indent_size; i++) {
-        indent = indent indent_char
+    for (i = 0; i < current_level * effective["indent_size"]; i++) {
+        indent = indent effective["indent_char"]
     }
 
     return indent
@@ -385,14 +396,14 @@ function create_indent(    indent, i) {
 
 # Ensures that a given indent size is a valid integer.
 function ensure_indent_size() {
-    if (indent_size ~ /^[0-9]+$/) {
+    if (effective["indent_size"] ~ /^[0-9]+$/) {
         if (DEV_MODE) {
-            print "[DEBUG] Indent size of " indent_size " is valid." > "/dev/stderr"
+            print "[DEBUG] Indent size of " effective["indent_size"] " is valid." > "/dev/stderr"
         }
 
         return 0
     } else {
-        print "[ERROR] Indent size of " indent_size " was not an integer."
+        print "[ERROR] Indent size of " effective["indent_size"] " was not an integer."
 
         return 1
     }
@@ -401,12 +412,12 @@ function ensure_indent_size() {
 # Resolves a given string, if supported, to a literal character for indenting.
 function resolve_indent_char() {
     # Only used in debug mode print out.
-    old_indent_char = indent_char
+    old_indent_char = effective["indent_char"]
 
-    if (indent_char == "space") {
-        indent_char = " "
-    } else if (indent_char == "tab") {
-        indent_char = "\t"
+    if (effective["indent_char"] == "space") {
+        effective["indent_char"] = " "
+    } else if (effective["indent_char"] == "tab") {
+        effective["indent_char"] = "\t"
     } else {
         print "[ERROR] Indent character not supported. Try 'space' or 'tab' instead."
 

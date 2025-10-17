@@ -31,7 +31,7 @@ EOF
 traps=""
 
 #/**
-# Multiple traps may be needed depending on control flow.
+# Adds multiple traps and stacks them.
 # add_trap handles keeping track of all traps to preform a full clean-up.
 # */
 add_trap() {
@@ -51,7 +51,7 @@ preform_traps() {
 }
 
 # This trap will always preform all clean up functions passed to add_trap!
-trap 'preform_traps' EXIT INT TERM
+trap 'preform_traps' EXIT INT TERM HUP
 
 #=====================#
 # SPFMT TMP DIRECTORY #
@@ -69,7 +69,6 @@ create_working_directory() {
         if [ "${DEV_MODE}" -eq 1 ]; then
             printf "[DEBUG] mktemp binary found on system.\n"
         fi
-
         TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
             # If mktemp does not succeed, resort to UNSAFE fallback of using /var/tmp...
             if [ "${DEV_MODE}" -eq 1 ]; then
@@ -91,10 +90,11 @@ create_working_directory() {
         }
     fi
 
+    # Trap whichever directory gets selected at the end.
     add_trap "rm -rf '${TMP_DIR}'"
 }
 
-# Wrapper command to help with mocking the command builtin.
+# Wrapper to help with mocking the command builtin.
 command_check() {
     ret="$(command -v -- "$1" 2>/dev/null || :)"
     if [ -n "${ret}" ]; then
@@ -256,7 +256,7 @@ parse_cli() {
 
 # spfmt needs at least 1 argument supplied that is a file.
 arguments_supplied() {
-    if [ ! -n "$1" ]; then
+    if [ -z "$1" ]; then
         printf "[ERROR] spfmt requires at least a file argument.\n"
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
         return 1
@@ -264,7 +264,7 @@ arguments_supplied() {
     return 0
 }
 
-# spfmt does not (currently) handle files and stdin simultaneously.
+# spfmt does not (currently) handle file inputs and stdin simultaneously.
 ensure_inputs() {
     if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
         printf "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously.\n"
@@ -280,7 +280,7 @@ spfmt() {
     #
     # Because stdin is usually the spfmt awk progam, in order to make room for
     # the users stdin arguments spfmt will be written to a tmp file and then
-    # passed as a file arg through to awk.
+    # passed as a file arg instead to awk.
     # */
     if [ -z "${awk_files}" ] && [ ! -t 0 ]; then
         awk_temp_file=$(mktemp) || {
@@ -335,7 +335,7 @@ case "$(basename -- "$0")" in
         #/**
         # Do nothing...
         #
-        # Allows both:
+        # Allows for both:
         # 1. Script to be sourced WITHOUT execution.
         # 2. For testing via shellcheck.
         # */

@@ -4,18 +4,9 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
 # Description: BATS tests for the _check_overrides function in the editorconfig.awk module.
 # File: test_check_overrides.bats
 # License: GNU GPLv3
-
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function _check_overrides() {
-#     defaults_overriden = indent_size_overriden && indent_char_overriden
-# }
 
 #========#
 # SET UP #
@@ -49,7 +40,7 @@ teardown_file() {
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
-@test "_check_overrides returns false when both params are not yet overriden" {
+@test "_check_overrides returns false when both indent size and char are not overriden" {
     vars="indent_size_overriden=0:indent_char_overriden=0"
     expected="0"
 
@@ -60,7 +51,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "_check_overrides returns false when one param is not yet overriden" {
+@test "_check_overrides returns false when only one of indent size and char are not overriden" {
     vars="indent_size_overriden=1:indent_char_overriden=0"
     expected="0"
 
@@ -71,7 +62,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "_check_overrides returns true when both params are overriden" {
+@test "_check_overrides returns true when both indent size and char are overriden" {
     vars="indent_size_overriden=1:indent_char_overriden=1"
     expected="1"
 
