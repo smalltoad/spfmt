@@ -79,6 +79,7 @@
 
     // Blanked coverage for files with default behavior.
     //"files.trimTrailingWhitespace": true,
+    "files.eol": "\n",
     "files.insertFinalNewline": true,
     "files.trimFinalNewlines": true,
 
