@@ -12,7 +12,7 @@
 # Includes env file which exports configuration variables.
 -include project_env.mk
 
-.PHONY: all clean install dist dev show-sources test
+.PHONY: all clean install dist dev show-sources test-build test-modules
 
 SHELL := /bin/sh
 
@@ -149,14 +149,23 @@ show-sources:
 # * Note that other parameters can be passed at the commandline.
 # *    Example: $ make test INTO=1
 # */
-test:
+test-modules:
+	@echo "Running tests with configuration:"
+	@echo "    Project Root: $(PROJ_ROOT)"
+	@echo "    Test Directory: $(TEST_DIR)/modules"
+	@echo "    INFO level: $(INFO)"
+	@echo ""
+	@echo "Command used:"
+	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)/modules/*/fut/*.bats
+
+test-build:
 	@echo "Running tests with configuration:"
 	@echo "    Project Root: $(PROJ_ROOT)"
 	@echo "    Test Directory: $(TEST_DIR)"
 	@echo "    INFO level: $(INFO)"
 	@echo ""
 	@echo "Command used:"
-	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)/*/fut/*.bats
+	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)build/*/fut/*.bats
 
 # Default make target
 all: clean $(OUTPUT)

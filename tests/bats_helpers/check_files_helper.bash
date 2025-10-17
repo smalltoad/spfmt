@@ -5,7 +5,7 @@
 # Author: Joseph Mowery <mowery.joseph@outlook.com>
 
 # Load colors for visualization of error messages.
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/colors_helper.bash"
 
 # Tests if path exists on the file system.
 path_exists() {

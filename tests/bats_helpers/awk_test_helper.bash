@@ -10,9 +10,7 @@
 # License: GNU GPLv3
 
 # DIRECTIVE JUSTIFICATION: Will inherit BATS env (otherwise script is being used incorrectly.)
-# shellcheck disable=SC2154
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/check_files_helper.bash"
 
 #=============#
 # AWK ASSERTS #
@@ -37,7 +35,7 @@ assert_builder() {
     # * Known locations. Relative locations are used to dynamically find
     # * expected locations during execution.
     # */
-    scripts_location="${BATS_TEST_DIRNAME}/../../../src/"
+    scripts_location="${BATS_TEST_DIRNAME}/../../../../src/"
     wrapper_location="${BATS_TEST_DIRNAME}/../harnesses/"
     mock_location="${BATS_TEST_DIRNAME}/../tmp/"
     input_path="${BATS_TEST_DIRNAME}/../test_data/inputs/"
@@ -149,7 +147,7 @@ mock_script() {
     script_name=${arguments%%:*}
     targets=${arguments#*:}
 
-    script_path="${BATS_TEST_DIRNAME}/../../../src/${script_name}"
+    script_path="${BATS_TEST_DIRNAME}/../../../../src/${script_name}"
     # Append  PID to separate mocks in a test suite.
     mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}.$$"
 

@@ -316,11 +316,11 @@ main() {
 
     #/**
     # Prepare tmp working directory. Must be created everytime.
-    # Working dir gets removed on exit and does not persist after spfmt executes.
+    # Working dir gets trap removed on exit and does not persist after spfmt executes.
     # */
     create_working_directory
 
-    # Construct and call spfmt.
+    # Construct cli arg to call spfmt.
     spfmt
 
     # Exit with spfmts exit code.

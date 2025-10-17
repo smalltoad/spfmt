@@ -17,47 +17,6 @@
 # With TAP compliant output:
 #     $ bats test_parse_editorconfig.bats --tap
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function _parse_editorconfig(config_file,    line, in_section, indents, char) {
-#    in_section = 1
-#
-#    while ((getline line < config_file) > 0) {
-#        strip_leading_whitespace(line)
-#        strip_trailing_whitespace(line)
-#
-#        if (line == "" || line ~ /^#/) { continue }
-#
-#        if (line ~ /^\[.*\]$/) {
-#            gsub(/^\[|\]$/, "", line)
-#
-#            if (line == "awk" || line == "spfmt") {
-#                in_section = 0
-#            } else if (in_section == 0){
-#                break
-#            }
-#
-#            continue
-#        }
-#        if (in_section == 0) {
-#            if (line ~ /^indent_size =/) {
-#                sub(/^indent_size =/, "", line)
-#                indent_size = line
-#                continue
-#            }
-#
-#            if (line ~ /^indent_size =/) {
-#                sub(/^indent_size =/, "", line)
-#                indent_size = line
-#                continue
-#            }
-#        }
-#    }
-#    close(config_file)
-# }
-
 #========#
 # SET UP #
 #========#
@@ -69,11 +28,7 @@ script="editorconfig.awk"
 harness="parse_editorconfig_harness.awk"
 
 # BATS helpers
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
-
-# Color sourcing must live outside setup() to be available in current env.
-. "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3

@@ -17,7 +17,7 @@
 
 # Get the root directory of the project.
 get_project_root() {
-    echo "${BATS_TEST_DIRNAME}/../../../"
+    echo "${BATS_TEST_DIRNAME}/../../../.."
 }
 
 # Get the source directory containing ssource code.
@@ -32,12 +32,12 @@ get_harness_dir() {
 
 # Get the BATS test helpers directory.
 get_helpers_dir() {
-    echo "${BATS_TEST_DIRNAME}/../../bats_helpers"
+    echo "${BATS_TEST_DIRNAME}/../../../bats_helpers"
 }
 
 # Get the tmp directory within a test folder.
 get_tmp_dir() {
-    echo "${BATS_TEST_DIRNAME}/../tmp"
+    echo "${BATS_TEST_DIRNAME}/../../tmp"
 }
 
 #====================#

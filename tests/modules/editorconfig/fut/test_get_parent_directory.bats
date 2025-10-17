@@ -41,11 +41,7 @@ script="editorconfig.awk"
 harness="get_parent_directory_harness.awk"
 
 # BATS helpers
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/awk_test_helper.bash"
-load "${BATS_TEST_DIRNAME}/../../bats_helpers/check_files_helper.bash"
-
-# Color sourcing must live outside setup() to be available in current env.
-. "${BATS_TEST_DIRNAME}/../../bats_helpers/colors_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3

@@ -10,28 +10,12 @@
 # File: test_check_overrides.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# create_working_directory() {
-#     if command -v mktemp >/dev/null 2>&1; then
-#         TMP_DIR=$(mktemp -d -t "spfmt.$$.XXXXXX") || {
-#             mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null
-#         }
-#     else
-#         TMP_DIR=$(mkdir -p "${TMP_DIR_FALLBACK}.$$" 2>/dev/null)
-#     fi
-#
-#     add_trap "rm -rf '${TMP_DIR}'"
-# }
-
 #========#
 # SET UP #
 #========#
 
 # Boilerplate load to get helper with known paths.
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../tests/bats_helpers")/sourcing_test_helper.bash"
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 
 source_script "cli_wrapper.sh"
 source_harness "create_working_directory_harness.bash"
