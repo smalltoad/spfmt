@@ -23,6 +23,11 @@ else
     RESET=""
 fi
 
+TREE_BRANCH="$(printf '\342\224\234\342\224\200\342\224\200')" # ├──
+TREE_END="$(printf '\342\224\224\342\224\200\342\224\200')"    # └──
+TREE_HOR="$(printf '\342\224\200\342\224\200')"                # ───
+TREE_VERT="$(printf '\342\224\202')"                           # │
+
 # Counters for summary.
 passed=0
 failed=0
@@ -41,23 +46,54 @@ known_suites="" # Used to keep track of suites, prevents repetitive prints.
 print_lines() {
     # Buffer passed in.
     buffer="$1"
-    # Stores infos for when it the actual test case appears.
+    # Stores infos for when the actual test case appears.
     info_buffer=""
 
     if echo "${buffer}" | grep -iE "suite" >/dev/null; then
         # Does the test contain a fail?
         module_failed=$(echo "${buffer}" | grep -E "not ok" 2>/dev/null)
+
+        module_count=$(echo "${buffer}" | grep -o MODULE | wc -l)
+        suite_count=$(echo "${buffer}" | grep -o SUITE | wc -l)
+        test_count=$(echo "${buffer}" | grep -cE "^(ok|not ok)")
+
+        # Start at one to avoid +1 everywhere when comparing.
+        module_curr=0
+        suite_curr=0
+        test_curr=0
+
+        color_col_1=""
+        color_col_2=""
+        color_col_3=""
+        draw_col_1=""
+        draw_col_2=""
+        draw_col_3=""
+
         printf '%b\n' "${buffer}" | while IFS= read -r line; do
             case "${line}" in
+                SPFMT\ *)
+                    printf "\n%s\n" "${line}"
+                    ;;
                 MODULE\ *)
                     # Look ahead and see if the enitre module has a fail or not.
                     if [ ! -z "${module_failed}" ]; then
-                        printf '%s%s%s\n' "${RED}" "${line}" "${RESET}"
+                        color_col_1="${RED}"
                     else
-                        printf '%s%s%s\n' "${GREEN}" "${line}" "${RESET}"
+                        color_col_1="${GREEN}"
                     fi
+
+                    if [ "${module_count}" -eq "1" ] || [ "${module_curr}" -ne "${module_count}" ]; then
+                        draw_col_1="${TREE_END}"
+                    else
+                        draw_col_1="${TREE_BRANCH}"
+                    fi
+
+                    module_curr=$((module_curr + 1))
+                    printf '%s%s%s%s\n' "${color_col_1}" "${draw_col_1}" "${line}" "${RESET}"
                     ;;
                 SUITE\ *)
+                    suite_curr=$((suite_curr + 1))
+
                     # Grab suite text using embedded AWK script.
                     suite_text=$(extract_suite_from_buffer "${buffer}" "${line##SUITE }")
                     # Determine number of passes, fails and get the total test count.
@@ -67,18 +103,50 @@ print_lines() {
 
                     # Look ahead and see if suite has a fail or not.
                     if [ "${fails}" -ne 0 ]; then
-                        printf '\t%s%s [%s/%s]%s\n' "${RED}" "${line}" "${passes}" "${total}" "${RESET}"
+                        color_col_2="${RED}"
                     else
-                        printf '\t%s%s [%s/%s]%s\n' "${GREEN}" "${line}" "${passes}" "${total}" "${RESET}"
+                        color_col_2="${GREEN}"
                     fi
+
+                    # More suites? Print a branch, otherwise a stub.
+                    if [ "${suite_curr}" -ne "${suite_count}" ]; then
+                        draw_col_2="${TREE_BRANCH}"
+                    else
+                        draw_col_2="${TREE_END}"
+                    fi
+
+                    # Safe to check directly against col1 because it never gets called twice per function call.
+                    if [ "${draw_col_1}" = "${TREE_BRANCH}" ]; then
+                        printf '%s%s%s  %s%s%s [%s/%s]%s\n' "${color_col_1}" "${TREE_VERT}" "${RESET}" "${color_col_2}" "${draw_col_2}" "${line}" "${passes}" "${total}" "${RESET}"
+                    else
+                        printf '   %s%s%s [%s/%s]%s\n' "${color_col_2}" "${draw_col_2}" "${line}" "${passes}" "${total}" "${RESET}"
+                    fi
+
+                    #printf '%s%s  %s%s [%s/%s]%s\n' "${color}" "${TREE_VERT}" "${TREE_BRANCH}" "${line}" "${passes}" "${total}" "${RESET}"
                     ;;
                 ok\ *)
-                    printf '\t\t%s%s%s\n' "${GREEN}" "${line}" "${RESET}"
+                    test_curr=$((test_curr + 1))
+
+                    # More tests? Print a branch, otherwise a stub.
+                    if [ "${test_curr}" -ne "${total}" ]; then
+                        draw_col_3="${TREE_BRANCH}"
+                    else
+                        draw_col_3="${TREE_END}"
+                        test_curr=0
+                    fi
+
+                    # Last suite already printed? No need for column 2 then.
+                    if [ "${suite_curr}" -eq "${suite_count}" ]; then
+                        printf '      %s%s%s%s\n' "${GREEN}" "${draw_col_3}" "${line}" "${RESET}"
+                    else
+                        printf '   %s%s%s  %s%s%s%s\n' "${GREEN}" "${TREE_VERT}" "${RESET}" "${GREEN}" "${draw_col_3}" "${line}" "${RESET}"
+                    fi
+
                     info_buffer=""
                     ;;
                 not\ ok\ *)
                     # Print failing test case.
-                    printf '\t\t%s%s%s\n' "${RED}" "${line}" "${RESET}"
+                    printf '%s%s\t\t%s%s\n' "${RED}" "${TREE_VERT}" "${line}" "${RESET}"
 
                     # Because of literal backslashes mix with newlines, must first
                     # print with %b then add format related newlines and tabs.
@@ -116,15 +184,15 @@ collect_lines() {
     # Read TAP from stdin line-by-line.
     while IFS= read -r line; do
         case "${line}" in
-            # TAP Test range. Always print.
+            # SPFMT header and TAP Test range. Always print.
             1..*)
                 tests="${line#*..}"
-                printf 'TOTAL TESTS: %s\n' "${tests}"
+                buffer="SPFMT FUNCTION TEST SUITE | TOTAL TESTS: ${tests}"
                 ;;
             # New suite of tests belonging to a module under /src folder.
             suite\ *)
-                # Remove the tests sub dir and everything before it.
-                suite="${line#*tests/}"
+                # Remove the (tests/)modules sub dir and everything before it.
+                suite="${line#*modules/}"
                 # Remove everything after the first forward slash.
                 suite="${suite%%/*}"
 
@@ -134,7 +202,7 @@ collect_lines() {
                     print_lines "${buffer}"
 
                     # Now that the buffer has been printed and cleared, restart.
-                    buffer="MODULE src/${suite}"
+                    buffer="${buffer}\nMODULE src/${suite}"
                     # Register in known suites, next time this case is hit the
                     # buffer will get printed.
                     known_suites="${known_suites} ${suite}"

@@ -37,10 +37,12 @@ script="file_utils.awk"
 # Harness to call specific FUT.
 harness="test_with_flag_harness.awk"
 
+# Boilerplate load to get helper with known paths.
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -51,7 +53,7 @@ setup_file() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #================#

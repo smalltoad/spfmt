@@ -5,17 +5,12 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 #/**
-# DESCRIPTION:
+# [DESCRIPTION]
 # POSIX-compliant AWK script to load in an .editorconfig file.
 # Aims to be a standalone module that can load editorconfigs via awk.
 #
-# Special variables that bubble up to spfmt.awk should be listed here:
-#   - indent_char
-#   - indent_size
-#   - defaults_overriden
-#
-# FILE: editorconfig.awk
-# LICENSE: GNU GPLv3
+# [FILE] editorconfig.awk
+# [LICENSE] GNU GPLv3
 
 #=========#
 # LOADERS #
@@ -413,7 +408,10 @@ function get_current_dir(current_dir) {
         print "[DEBUG] AWK thinks ENVIRON[\"PWD\"] is " current_dir > "/dev/stderr"
     }
 
-    # If current directory is not set OR the directory is not real.
+    #/**
+    # Is the current directory unset OR the directory is not real?
+    # Then default to relative path of current working directory.
+    # */
     if (current_dir == "" || test_directory(current_dir) == 1) {
         current_dir = "."
     }

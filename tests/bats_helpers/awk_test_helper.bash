@@ -4,13 +4,29 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS helper for AWK testing, streamlines test creation and assertions.
-# File: awk_test_helper.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION] BATS helper for AWK testing, streamlines test creation and assertions.
+#
+# [FILE] awk_test_helper.bats
+# [LICENSE] GNU GPLv3
+# */
 
-# DIRECTIVE JUSTIFICATION: Will inherit BATS env (otherwise script is being used incorrectly.)
-load "${BATS_TEST_DIRNAME}/../../../bats_helpers/check_files_helper.bash"
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+# Expected to be passed on cli.
+INFO=${INFO:-""}
+
+scripts_location="$(get_src_dir)/"
+wrapper_location="$(get_harness_dir)/"
+mock_location="$(get_tmp_dir)/"
+input_path="$(get_test_inputs_dir)/"
+output_path="$(get_test_outputs_dir)/"
+
+#/**
+# Known locations. Relative locations are used to dynamically find
+# expected locations during execution.
+# */
 
 #=============#
 # AWK ASSERTS #
@@ -31,16 +47,6 @@ assert_builder() {
     remove=""                 # To filter out of output before assert.
     exit_code=""
 
-    #/**
-    # * Known locations. Relative locations are used to dynamically find
-    # * expected locations during execution.
-    # */
-    scripts_location="${BATS_TEST_DIRNAME}/../../../../src/"
-    wrapper_location="${BATS_TEST_DIRNAME}/../harnesses/"
-    mock_location="${BATS_TEST_DIRNAME}/../tmp/"
-    input_path="${BATS_TEST_DIRNAME}/../test_data/inputs/"
-    output_path="${BATS_TEST_DIRNAME}/../test_data/outputs/"
-
     while getopts "f:h:m:e:i:o:x:v:s:c:r:" opt; do
         case "${opt}" in
         f)
@@ -48,7 +54,7 @@ assert_builder() {
             files="${files} -f ${scripts_location}${OPTARG}"
             ;;
         h)
-            # Harness to call FUT.
+            # Harness to call FUT and expose internals.
             harnesses="${harnesses} -f ${wrapper_location}${OPTARG}"
             ;;
         m)
@@ -64,8 +70,10 @@ assert_builder() {
             fi
             ;;
         i)
+            #/**
             # Input through stdin, expected ":" deliniated list.
-            # Harnesses should properly tokenize.
+            # Harnesses should properly tokenize and parse/set values.
+            # */
             stdin="printf '%s' $(printf '%q' "${OPTARG}") | "
             ;;
         o)
@@ -78,9 +86,10 @@ assert_builder() {
             ;;
         v)
             #/**
-            # * TODO: This breaks the output capture that BATS provides.
-            # * Debugs are also captured, perhaps there is a better way to
-            # * seperate actual output from debug statements in BATS.
+            # TODO: This breaks the output capture that BATS provides.
+            # Debugs are also captured, perhaps there is a better way to
+            # seperate actual output from debug statements in BATS.
+            # */
             IFS=':' read -ra var_array <<<"${OPTARG}"
             IFS=' '
             # Process each variable assignment.
@@ -113,9 +122,13 @@ assert_builder() {
         esac
     done
 
+    # Templeted final command for AWK script.
     concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
 
-    # TODO: Remove this line. Is used for testing.
+    #/**
+    # TODO: Remove this line/turn into a debug statement.
+    # Is used for testing.
+    # */
     echo "${concat_command}" >&3
 
     run bash -c "${concat_command}"
@@ -134,51 +147,69 @@ assert_builder() {
 #=============#
 
 #/**
-# * Removes functions from a file. Meant for mocking internal functions.
+# * Removes functions from a file. Meant for mocking away internal functions.
 # * Note that for BATS tests, mocks should be made a single time at the
 # * top of the file. Parellelism issues have occured when this option is
-# * used incorrectly... Prefer -f over this function to avoid flaky tests.
+# * used incorrectly...
 # *
 # * USAGE:
-# *      Expects format "file:function_to_mock1:function_to_mock2..."
+# *      Expects arg format "file:function_to_mock1:function_to_mock2..."
 # */
 mock_script() {
-    arguments="$1"
-    script_name=${arguments%%:*}
-    targets=${arguments#*:}
+    script_name="$1"
+    arguments="$2"
 
-    script_path="${BATS_TEST_DIRNAME}/../../../../src/${script_name}"
-    # Append  PID to separate mocks in a test suite.
-    mock_path="${BATS_TEST_DIRNAME}/../tmp/mock_${script_name}.$$"
+    script_path="${scripts_location}/${script_name}"
 
+    # Append PID to separate mocks in a test suite. This is probably uneeded.
+    mock_path="${mock_location}/mock_${script_name}.$$"
     touch "${mock_path}"
 
     sed_command=""
 
     while :; do
-        fn=${targets%%:*}
+        # Get a requested function to mock from the ':' delineated list.
+        fn=${arguments%%:*}
 
+        # Removes the BEGIN scope from a script
         if [[ "${fn}" = "BEGIN" ]]; then
             sed_command+=" -e '/^${fn} /,/^}$/d'"
+        # Removes the END scope from a script
         elif [[ "${fn}" = "END" ]]; then
             sed_command+=" -e '/^${fn} /,/^}$/d'"
+        # Removes ALL the regex rules
         elif [[ "${fn}" = "REGEX" ]]; then
             sed_command+=" -e '/^\/\^/,/^}$/d'"
+        #/**
+        # Removes all basic scopes from a script
+        # This is mostly just required for the spfmt.awk module.
+        # */
         elif [[ "${fn}" = "{}" ]]; then
             sed_command+=" -e '/^{/,/^}$/d'"
+        # Otherwise, just remove the function name from the awk file
         else
             sed_command+=" -e '/^function ${fn}/,/^}$/d'"
         fi
 
-        remaining=${targets#*:}
+        # Remove the requested function that was just handled from the targets.
+        remaining=${arguments#*:}
 
-        [[ "${remaining}" = "${targets}" ]] && break
-        targets=${remaining}
+        # Any targets left?
+        [[ "${remaining}" = "${arguments}" ]] && break
+        arguments=${remaining}
     done
 
     eval "sed ${sed_command} '${script_path}'" >"${mock_path}"
 
-    printf "%s\n" "${mock_path}"
+    trap "rm -rf ${mock_path}; echo "TRAP CALLED!" >&3"
+
+    # Just return the mock name, the path is managed in this file.
+    printf "%s\n" "$(basename -- "${mock_path}")"
+}
+
+# Use in teardown_file within test files.
+clean_mock() {
+    rm -rf "${mock_location:?}/$1"
 }
 
 #=================#
@@ -187,25 +218,23 @@ mock_script() {
 
 # NOTE: Assertions must happen in the calling scope of 'run'!
 
-# Checks BATS status var for last command ran
+# Checks BATS status var for last command ran.
 bats_status_check() {
     expected_status="${1:-0}"
 
     if [[ "${INFO}" -eq 1 ]]; then
         printf "[INFO] Expected Status: [%q]\n" "${expected_status}" >&3
+        # shellcheck disable=SC2154 # status is captured and provided by BATS.
         printf "[INFO] Actual Status:   [%q]\n" "${status}" >&3
     fi
 
-    # Check that AWK exit code is successful first.
-    # SURPRESSION REASON: Greater POSIX compliance.
-    # shellcheck disable=SC2292
-    [ "${status}" -eq "${expected_status}" ] || {
+    [[ "${status}" -eq "${expected_status}" ]] || {
         printf "[ERROR] Exit code was non-zero: [%s]" "${status}" >&2
         return 1
     }
 }
 
-# Checks BATS status var of the last command ran
+# Checks BATS output var of the last command ran.
 bats_output_check() {
     expected="$1"
 
@@ -215,9 +244,7 @@ bats_output_check() {
     fi
 
     # Check that AWK output matches expectation.
-    # SURPRESSION REASON: Greater POSIX compliance.
-    # shellcheck disable=SC2292
-    [ "${output}" == "${expected}" ] || {
+    [[ "${output}" == "${expected}" ]] || {
         printf "[ERROR] Output did not match expectation.\n" >&2
         return 1
     }

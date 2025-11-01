@@ -28,10 +28,11 @@ script="editorconfig.awk"
 harness="parse_editorconfig_harness.awk"
 
 # BATS helpers
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -47,9 +48,10 @@ setup() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
+# Removes all tmp files in base.
 teardown() {
     rm -rf "${base:-}"
 }

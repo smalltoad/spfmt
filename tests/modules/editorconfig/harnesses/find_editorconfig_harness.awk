@@ -14,6 +14,7 @@
     print result
 }
 
+# If the file name contians the string "real" only then return true.
 function test_file(_file_path_to_check) {
     if (_file_path_to_check ~ /.*real.*\/.editorconfig$/) {
         return 0
@@ -21,6 +22,7 @@ function test_file(_file_path_to_check) {
     return 1
 }
 
+# If the file name contians the string "readable" only then return true.
 function test_readable(_file_path_to_check) {
     if (_file_path_to_check ~ /.*readable\/.editorconfig$/) {
         return 0

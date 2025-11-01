@@ -17,6 +17,7 @@
 
 # Get the root directory of the project.
 get_project_root() {
+    # shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
     echo "${BATS_TEST_DIRNAME}/../../../.."
 }
 
@@ -30,14 +31,22 @@ get_harness_dir() {
     echo "${BATS_TEST_DIRNAME}/../harnesses"
 }
 
+# Get the tmp directory within a test folder.
+get_tmp_dir() {
+    echo "${BATS_TEST_DIRNAME}/../tmp"
+}
+
 # Get the BATS test helpers directory.
 get_helpers_dir() {
     echo "${BATS_TEST_DIRNAME}/../../../bats_helpers"
 }
 
-# Get the tmp directory within a test folder.
-get_tmp_dir() {
-    echo "${BATS_TEST_DIRNAME}/../../tmp"
+get_test_inputs_dir() {
+    echo "${BATS_TEST_DIRNAME}/../test_data/inputs/"
+}
+
+get_test_outputs_dir() {
+    echo "${BATS_TEST_DIRNAME}/../test_data/outputs/"
 }
 
 #====================#
@@ -100,7 +109,7 @@ log_test_end() {
     echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
 }
 
-# (bash-ism) Export functions so they're available in test files
+# Export functions so they're available in test files
 export -f get_project_root
 export -f get_src_dir
 export -f get_harness_dir

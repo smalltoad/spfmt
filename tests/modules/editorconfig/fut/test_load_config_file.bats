@@ -9,35 +9,6 @@
 # File: load_config_file_test.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function load_config_file(indent_size, indent_char,    _current_dir, _editorconfig_path, _configs_found, _root_found, _search_flag) {
-#     _current_dir = get_current_dir()
-#     _search_flag = 1
-#     _configs_found = 0
-#     _root_found = 0
-#
-#     while (_search_flag) {
-#         _editorconfig_path = _find_editorconfig(_current_dir)
-#
-#         if (_editorconfig_path != "") {
-#             _configs_found += 1
-#
-#             _parse_editorconfig(_editorconfig_path, indent_size, indent_char)
-#
-#            if (_is_root_config(_editorconfig_path) == 1) {
-#                _current_dir = get_parent_directory()
-#            } else {
-#                _search_flag = 0
-#            }
-#         } else {
-#             _search_flag = 0
-#         }
-#     }
-# }
-
 #========#
 # SET UP #
 #========#
@@ -49,10 +20,11 @@ script="editorconfig.awk"
 harness="load_config_file_harness.awk"
 
 # BATS helpers
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -63,7 +35,7 @@ setup_file() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END]${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #============#

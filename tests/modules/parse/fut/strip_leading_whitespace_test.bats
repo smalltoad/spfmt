@@ -4,37 +4,28 @@
 # Desc: BATS tests for the strip_leading_whitespace function in the parse.awk module.
 # Author: Joseph Mowery <mowery.joseph@outlook.com>
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function strip_leading_whitespace(line) {
-#     sub(/^[ \t]+/, "", line)
-#     return line
-# }
-
 #========#
 # SET UP #
 #========#
 
+# Boilerplate load to get helper with known paths.
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 }
 
-# Runs for each @test case
 setup() {
     # AWK script containing FUT
     script="parse.awk"
 
     # Harness to call specific FUT
     harness="strip_leading_whitespace_harness.awk"
-
-    # BATS helpers
-    load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 }
 
 teardown_file() {
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #============#

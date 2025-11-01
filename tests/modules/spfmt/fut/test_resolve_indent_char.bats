@@ -19,10 +19,11 @@ script="spfmt.awk"
 harness="resolve_indent_char_harness.awk"
 
 # BATS helpers
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -33,14 +34,14 @@ setup_file() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #============#
 # TEST CASES #
 #============#
 
-@test "resolve_indent_char correctly resolves space" {
+@test "[TEST] resolve_indent_char correctly resolves space" {
     vars="indent_char=space"
     expected=" "
 
@@ -51,7 +52,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "resolve_indent_char correctly resolves tab" {
+@test "[TEST] resolve_indent_char correctly resolves tab" {
     vars="indent_char=tab"
     expected=$(printf "\t")
 

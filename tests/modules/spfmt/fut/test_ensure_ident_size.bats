@@ -21,9 +21,10 @@ harness="ensure_indent_size_harness.awk"
 
 # BATS helpers
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -34,10 +35,10 @@ setup_file() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
-@test "ensure_indent_size returns true for the lower boundry" {
+@test "[TEST] ensure_indent_size returns true for the lower boundry" {
     vars="indent_size=0"
     expected="0"
 
@@ -48,7 +49,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "ensure_indent_size returns true for single diget" {
+@test "[TEST] ensure_indent_size returns true for single diget" {
     vars="indent_size=9"
     expected="0"
 
@@ -59,7 +60,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "ensure_indent_size returns true for greatly above the lower boundry" {
+@test "[TEST] ensure_indent_size returns true for greatly above the lower boundry" {
     vars="indent_size=5000"
     expected="0"
 
@@ -70,7 +71,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "ensure_indent_size returns false for non integer value of decimal" {
+@test "[TEST] ensure_indent_size returns false for non integer value of decimal" {
     vars="indent_size=1.6"
     remove='\[ERROR\].*$'
     expected="1"
@@ -83,7 +84,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "ensure_indent_size returns false for non integer value of word" {
+@test "[TEST] ensure_indent_size returns false for non integer value of word" {
     vars="indent_size=notanumber!"
     remove='\[ERROR\].*$'
     expected="1"

@@ -9,23 +9,16 @@
 # File: test_readable_test.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# NOTE: This function is a wrapper around _test_with_flag, for implementation
-# details refer to either file_utils._test_with_flag or test_with_flag_test.bats
-
-# function test_readable(target, flag) {
-#     return _test_with_flag(target, "r")
-# }
-
 #========#
 # SET UP #
 #========#
 
+# BATS helpers
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 }
 
 # Runs for each @test case
@@ -35,13 +28,10 @@ setup() {
 
     # Harness to call specific FUT
     harness="test_readable_harness.awk"
-
-    # BATS helpers
-    load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 }
 
 teardown_file() {
-    echo "#=== [END] ${BATS_TEST_FILENAME##*/} [END] ===#" >&3
+    log_test_end
 }
 
 #============#

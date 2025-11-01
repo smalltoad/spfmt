@@ -9,25 +9,15 @@
 # File: test_directory_test.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# NOTE: This function is a wrapper around _test_with_flag, for implementation
-# details refer to test_with_flag_test.bats
-
-# function test_directory(target, flag) {
-#     return _test_with_flag(target, "d")
-# }
-
 #========#
 # SET UP #
 #========#
 
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 }
 
 # Runs for each @test case
@@ -40,7 +30,7 @@ setup() {
 }
 
 teardown_file() {
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #============#

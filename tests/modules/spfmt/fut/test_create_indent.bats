@@ -20,10 +20,11 @@ script="spfmt.awk"
 harness="create_indent_harness.awk"
 
 # BATS helpers
+load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
 setup_file() {
-    echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_start
 
     export mocked_script
 
@@ -34,14 +35,14 @@ setup_file() {
 
 teardown_file() {
     rm -rf "${mocked_script_path}"
-    echo "[END] ${BATS_TEST_FILENAME##*/}" >&3
+    log_test_end
 }
 
 #============#
 # TEST CASES #
 #============#
 
-@test "create_indent prints the correct indent for starting level" {
+@test "[TEST] create_indent prints the correct indent for starting level" {
     env="MOCK_LEVEL=\"0\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
     expected=""
 
@@ -52,7 +53,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for 1 level deep" {
+@test "[TEST] create_indent prints the correct indent for 1 level deep" {
     env="MOCK_LEVEL=\"1\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
     expected="  "
 
@@ -63,7 +64,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for 2 levels deep" {
+@test "[TEST] create_indent prints the correct indent for 2 levels deep" {
     env="MOCK_LEVEL=\"2\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
     expected="    "
 
@@ -74,7 +75,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "create_indent prints the correct indent for many levels deep" {
+@test "[TEST] create_indent prints the correct indent for many levels deep" {
     env="MOCK_LEVEL=\"50\" MOCK_INDENT_SIZE=\"2\" MOCK_INDENT_CHAR=\" \""
     expected=$(printf '%100s' '')
 
