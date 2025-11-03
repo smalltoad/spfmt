@@ -4,9 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Description: BATS tests for the _check_overrides function in the editorconfig.awk module.
-# File: test_check_overrides.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the _check_overrides function in the editorconfig.awk module.
+#
+# [FILE] test_check_overrides.bats
+# [LICENSE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
@@ -16,10 +20,7 @@
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 
-# AWK script containing FUT
 script="editorconfig.awk"
-
-# Harness to call specific FUT
 harness="_check_overrides_harness.awk"
 
 setup_file() {

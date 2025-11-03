@@ -4,37 +4,34 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS tests for the load_config_file function in the editorconfig.awk module.
-# File: load_config_file_test.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the load_config_file function in the editorconfig.awk module.
+#
+# [FILE] load_config_file_test.bats
+# [LICESNE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
 #========#
 
-# AWK script containing FUT
-script="editorconfig.awk"
-
-# Harness to call specific FUT
-harness="load_config_file_harness.awk"
-
-# BATS helpers
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="editorconfig.awk"
+harness="load_config_file_harness.awk"
 
 setup_file() {
     log_test_start
 
-    export mocked_script
-
-    # Create mock for test suite.
-    mocked_script_path=$(mock_script "${script}:get_current_dir:_find_editorconfig:_parse_editorconfig:get_parent_directory:_is_root_config")
-    mocked_script=$(basename -- "${mocked_script_path}")
+    mock=$(mock_script "${script}" "get_current_dir:_find_editorconfig:_parse_editorconfig:get_parent_directory:_is_root_config")
+    export mock
 }
 
 teardown_file() {
-    rm -rf "${mocked_script_path}"
+    clean_mock "${mock}"
     log_test_end
 }
 
@@ -52,7 +49,7 @@ teardown_file() {
         PARENT_DIRECTORY=\"/\""
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -e "${env}" \
         -x "${expected}"
@@ -68,7 +65,7 @@ teardown_file() {
         PARENT_DIRECTORY=\"/tmp\""
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -e "${env}" \
         -x "${expected}"
@@ -84,7 +81,7 @@ teardown_file() {
         PARENT_DIRECTORY=\"/tmp/dotfiles\""
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -e "${env}" \
         -x "${expected}"

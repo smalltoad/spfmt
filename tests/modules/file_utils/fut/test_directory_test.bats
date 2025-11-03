@@ -4,29 +4,28 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: BATS tests for the test_directory function in the editorconfig.awk module.
-# File: test_directory_test.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the test_directory function in the editorconfig.awk module.
+#
+# [FILE] test_directory_test.bats
+# [LICENSE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
 #========#
 
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/tmp_folder_helper.bash"
+
+script="file_utils.awk"
+harness="test_directory_harness.awk"
 
 setup_file() {
     log_test_start
-}
-
-# Runs for each @test case
-setup() {
-    # AWK script containing FUT
-    script="file_utils.awk"
-
-    # Harness to call specific FUT
-    harness="test_directory_harness.awk"
 }
 
 teardown_file() {
@@ -60,7 +59,7 @@ teardown_file() {
 }
 
 @test "[TEST] test_directory returns true when valid directory is passed" {
-    input=$(mktemp -d)
+    input="$(get_temp_working_dir)"
     expected="0"
 
     assert_builder \

@@ -9,50 +9,26 @@
 # File: test_with_flag_test.bats
 # License: GNU GPLv3
 
-#=====================#
-# FUNCTION UNDER TEST #
-#=====================#
-
-# function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
-#     _resolved_flag = _value_of_flag(flag)
-#     _result = 1
-#
-#     if (!target || !_resolved_flag) {
-#         return _result
-#     }
-#
-#     _cmd = "test -"flag"  \"" target "\""
-#     _result = system(_cmd)
-#
-#     return (_result)
-# }
-
 #========#
 # SET UP #
 #========#
 
-# AWK script containing FUT.
-script="file_utils.awk"
-
-# Harness to call specific FUT.
-harness="test_with_flag_harness.awk"
-
-# Boilerplate load to get helper with known paths.
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="file_utils.awk"
+harness="test_with_flag_harness.awk"
 
 setup_file() {
     log_test_start
 
-    export mocked_script
-
-    # Create mock for test suite.
-    mocked_script_path=$(mock_script "${script}:_value_of_flag")
-    mocked_script=$(basename -- "${mocked_script_path}")
+    mock=$(mock_script "${script}" "_value_of_flag")
+    export mock
 }
 
 teardown_file() {
-    rm -rf "${mocked_script_path}"
+    clean_mock "${mock}"
     log_test_end
 }
 
@@ -112,7 +88,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -125,7 +101,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -140,7 +116,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -159,7 +135,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -174,7 +150,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
@@ -188,7 +164,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${non_existent_file}:${flag}" \
         -x "${expected}"
@@ -205,7 +181,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
@@ -225,7 +201,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -248,7 +224,7 @@ teardown_file() {
     fi
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"
@@ -268,7 +244,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
@@ -287,7 +263,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -i "${tmp_file}:${flag}" \
         -x "${expected}"

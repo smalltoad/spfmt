@@ -16,12 +16,12 @@
 # SET UP #
 #========#
 
-script="editorconfig.awk"
-harness="get_current_directory_harness.awk"
-
 # shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="editorconfig.awk"
+harness="get_current_directory_harness.awk"
 
 setup_file() {
     log_test_start

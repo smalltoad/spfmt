@@ -33,8 +33,9 @@ output_path="$(get_test_outputs_dir)/"
 #=============#
 
 assert_builder() {
-    # Default values to build AWK command with.
+    # Default values to build AWK command template with.
     stdin="printf \"\\n\" | " # Input into AWK function.
+    input=""                  # Used for INFO prints only.
     envs=""                   # ENVIRON process variables.
     awk_command="awk"         # AWK command.
     vars=""                   # Passed environment variables.
@@ -72,8 +73,9 @@ assert_builder() {
         i)
             #/**
             # Input through stdin, expected ":" deliniated list.
-            # Harnesses should properly tokenize and parse/set values.
+            # If needed harnesses should properly tokenize and parse/set values.
             # */
+            input=$(printf '%q' "${OPTARG}") # used for INFO prints
             stdin="printf '%s' $(printf '%q' "${OPTARG}") | "
             ;;
         o)
@@ -125,12 +127,11 @@ assert_builder() {
     # Templeted final command for AWK script.
     concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
 
-    #/**
-    # TODO: Remove this line/turn into a debug statement.
-    # Is used for testing.
-    # */
-    echo "${concat_command}" >&3
+    if [[ "${INFO}" -eq 1 ]]; then
+        echo "[INFO] Command Used: [${concat_command}]" >&3
+    fi
 
+    # Use BATS run and capture status and outputs.
     run bash -c "${concat_command}"
 
     # Filter out any requested lines from output.
@@ -147,13 +148,15 @@ assert_builder() {
 #=============#
 
 #/**
-# * Removes functions from a file. Meant for mocking away internal functions.
-# * Note that for BATS tests, mocks should be made a single time at the
-# * top of the file. Parellelism issues have occured when this option is
-# * used incorrectly...
-# *
-# * USAGE:
-# *      Expects arg format "file:function_to_mock1:function_to_mock2..."
+# Removes functions from a file. Meant for mocking away internal functions.
+# Note that for BATS tests, mocks should be made a single time at the
+# top of the file. Parellelism issues have occured when this option is
+# used incorrectly...
+#
+# Make sure to use the clean_mock function below to remove tmp files!
+#
+# USAGE:
+#    Expects arg format "file:function_to_mock1:function_to_mock2..."
 # */
 mock_script() {
     script_name="$1"
@@ -201,13 +204,11 @@ mock_script() {
 
     eval "sed ${sed_command} '${script_path}'" >"${mock_path}"
 
-    trap "rm -rf ${mock_path}; echo "TRAP CALLED!" >&3"
-
     # Just return the mock name, the path is managed in this file.
     printf "%s\n" "$(basename -- "${mock_path}")"
 }
 
-# Use in teardown_file within test files.
+# Use this in teardown_file within test files.
 clean_mock() {
     rm -rf "${mock_location:?}/$1"
 }
@@ -239,6 +240,9 @@ bats_output_check() {
     expected="$1"
 
     if [[ "${INFO}" -eq 1 ]]; then
+        if [[ -n "${input}" ]]; then
+            echo "[INFO] Actual Input:    [${input}]" >&3
+        fi
         printf "[INFO] Expected Output: [%q]\n" "${expected}" >&3
         printf "[INFO] Actual Output:   [%q]\n" "${output}" >&3
     fi

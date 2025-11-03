@@ -13,21 +13,15 @@
 # SET UP #
 #========#
 
-# BATS helpers
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="file_utils.awk"
+harness="test_file_harness.awk"
 
 setup_file() {
     log_test_start
-}
-
-# Runs for each @test case
-setup() {
-    # AWK script containing FUT
-    script="file_utils.awk"
-
-    # Harness to call specific FUT
-    harness="test_file_harness.awk"
 }
 
 teardown_file() {
@@ -174,6 +168,7 @@ teardown_file() {
     expected="1"
 
     # Try to find a block device from common locations.
+    # shellcheck disable=SC3054 # Bash interpreter used in BATS
     for device in "${block_locations[@]}"; do
         if [ -b "${device}" ]; then
             target="${device}"

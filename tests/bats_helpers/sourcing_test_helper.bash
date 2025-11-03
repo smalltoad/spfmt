@@ -102,6 +102,7 @@ source_helpers() {
 #===================#
 
 log_test_start() {
+    # shellcheck disable=SC2154 # BATS_TEST_FILENAME provided by BATS.
     echo "[START] ${BATS_TEST_FILENAME##*/}" >&3
 }
 

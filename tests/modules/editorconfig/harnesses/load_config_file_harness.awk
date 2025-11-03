@@ -4,10 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: Wrapper for editorconfig.awk function of parse_editorconfig to print results.
-# File: parse_editorconfig_harness.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# Wrapper for editorconfig.awk function of parse_editorconfig to print results.
+#
+# [FILE] parse_editorconfig_harness.bats
+# [LICENSE] GNU GPLv3
+# */
 
 # Indexes to ENVIRON array to keep track of current return value in ":" delineated list.
 

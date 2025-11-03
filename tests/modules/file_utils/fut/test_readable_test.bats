@@ -4,33 +4,42 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description:  BATS tests for the test_readable function in the editorconfig.awk module.
-# File: test_readable_test.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the test_readable function in the editorconfig.awk module.
+#
+# [FILE] test_readable_test.bats
+# [LICENSE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
 #========#
 
-# BATS helpers
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/tmp_folder_helper.bash"
+
+script="file_utils.awk"
+harness="test_readable_harness.awk"
 
 setup_file() {
     log_test_start
+
+    tmp_dir="$(get_temp_working_dir)"
+    export tmp_dir
 }
 
-# Runs for each @test case
 setup() {
-    # AWK script containing FUT
-    script="file_utils.awk"
-
-    # Harness to call specific FUT
-    harness="test_readable_harness.awk"
+    tmp_file="${tmp_dir}"/tmp_file.$$
+    mkdir -p "${tmp_dir}"/tmp_file.$$ || false
 }
 
 teardown_file() {
+    chmod +644 "${tmp_dir}"
+    rm -rf "${tmp_dir}"
+
     log_test_end
 }
 
@@ -39,8 +48,6 @@ teardown_file() {
 #============#
 
 @test "[TEST] test_readable returns true when everyone has full permissions (chmod 777)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has readable permissions everyone.
     # *      Owner (7): rwx
@@ -58,13 +65,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_readable returns true when only owner has read permissions (chmod 644)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has readable permissions for owner only.
     # *      Owner (6): rwx
@@ -82,13 +85,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_readable returns false when only no one has read permissions (chmod 333)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has readable permissions for no one.
     # *      Owner (3): rwx
@@ -106,13 +105,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_readable returns false for no permissions (chmod 000)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has zero permissions for everyone.
     # *      Owner (0): rwx
@@ -130,14 +125,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    chmod 644 "${tmp_file}"
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_readable returns false when only group has read (chmod 040)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has readable permissions group only.
     # *      Owner (0): rwx
@@ -155,14 +145,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    chmod 644 "${tmp_file}"
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_readable returns false when only others have read (chmod 004)" {
-    tmp_file=$(mktemp)
-
     #/**
     # * Ensure the file has readable permissions for others only.
     # *      Owner (0): rwx
@@ -180,7 +165,4 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    chmod 644 "${tmp_file}"
-    rm "${tmp_file}"
 }

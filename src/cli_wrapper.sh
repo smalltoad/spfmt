@@ -5,12 +5,12 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 #/**
-# DESCRIPTION:
+# [DESCRIPTION]
 # CLI wrapper for spfmt, provides CLI specific handling while obfuscating AWK
 # cli options away from the user.
 #
-# FILE: cli_wrapper.sh
-# LICESNE: GNU GPLv3
+# [FILE] cli_wrapper.sh
+# [LICESNE] GNU GPLv3
 # */
 
 #===============#

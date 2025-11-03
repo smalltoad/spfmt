@@ -61,7 +61,7 @@ filesystem_setup() {
     input="${input}/${target}"
     mkdir "${input}"
 
-    # Exposes location to append required files in caller.
+    # Save off location early.
     location="${input}"
 
     # Build up the directories before where .editorconfig lives.
@@ -70,5 +70,7 @@ filesystem_setup() {
         mkdir "${input}"
     done
 
-    echo "${location}"
+    # location - Expected location, caller needs to make the file here.
+    # input - Full constructed path.
+    echo "${location}:${input}"
 }
