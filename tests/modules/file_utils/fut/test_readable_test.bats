@@ -33,7 +33,7 @@ setup_file() {
 
 setup() {
     tmp_file="${tmp_dir}"/tmp_file.$$
-    mkdir -p "${tmp_dir}"/tmp_file.$$ || false
+    touch "${tmp_dir}"/tmp_file.$$ || false
 }
 
 teardown_file() {

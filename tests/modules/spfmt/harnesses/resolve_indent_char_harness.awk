@@ -10,6 +10,10 @@
 # License: GNU GPLv3
 
 {
+    #/**
+    # Needs to be set BEFORE the function call as it is set earlier in program
+    # execution.
+    # */
     effective["indent_char"] = indent_char
 
     resolve_indent_char()

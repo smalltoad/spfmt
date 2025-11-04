@@ -13,28 +13,23 @@
 # SET UP #
 #========#
 
-# AWK script containing FUT
-script="spfmt.awk"
-
-# Harness to call specific FUT
-harness="ensure_indent_size_harness.awk"
-
-# BATS helpers
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="spfmt.awk"
+harness="ensure_indent_size_harness.awk"
 
 setup_file() {
     log_test_start
 
-    export mocked_script
-
-    # Create mock for test suite.
-    mocked_script_path=$(mock_script "${script}:BEGIN:END:REGEX:{}")
-    mocked_script=$(basename -- "${mocked_script_path}")
+    mock=$(mock_script "${script}" "BEGIN:END:REGEX:{}")
+    export mock
 }
 
 teardown_file() {
-    rm -rf "${mocked_script_path}"
+    clean_mock "${mock}"
+
     log_test_end
 }
 
@@ -43,7 +38,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -v "${vars}" \
         -x "${expected}"
@@ -54,7 +49,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -v "${vars}" \
         -x "${expected}"
@@ -65,7 +60,7 @@ teardown_file() {
     expected="0"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -v "${vars}" \
         -x "${expected}"
@@ -77,7 +72,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -v "${vars}" \
         -r "${remove}" \
@@ -90,7 +85,7 @@ teardown_file() {
     expected="1"
 
     assert_builder \
-        -m "${mocked_script}" \
+        -m "${mock}" \
         -h "${harness}" \
         -v "${vars}" \
         -r "${remove}" \

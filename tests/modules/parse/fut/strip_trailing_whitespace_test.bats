@@ -13,21 +13,15 @@
 # SET UP #
 #========#
 
-# BATS helpers
+# shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
-load "$(realpath "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash")"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+
+script="parse.awk"
+harness="strip_trailing_whitespace_harness.awk"
 
 setup_file() {
     log_test_start
-}
-
-# Runs for each @test case
-setup() {
-    # AWK script containing FUT
-    script="parse.awk"
-
-    # Harness to call specific FUT
-    harness="strip_trailing_whitespace_harness.awk"
 }
 
 teardown_file() {

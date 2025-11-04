@@ -36,9 +36,9 @@ BEGIN {
 function _value_of_flag(arg) {
     # AWK Convention for a false value.
     if (arg == "" || arg == 0) {
-        return 0
+        return ""
     }
 
     # Passed arg must be true. Return true.
-    return 1
+    return "some_non-null_value"
 }

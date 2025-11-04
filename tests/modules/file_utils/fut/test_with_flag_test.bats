@@ -4,10 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description:  BATS tests for the test_with_flag function in the file_utils.awk module.
-# File: test_with_flag_test.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the test_with_flag function in the file_utils.awk module.
+#
+# [FILE] test_with_flag_test.bats
+# [LICENSE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
@@ -16,6 +19,7 @@
 # shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/tmp_folder_helper.bash"
 
 script="file_utils.awk"
 harness="test_with_flag_harness.awk"
@@ -25,10 +29,20 @@ setup_file() {
 
     mock=$(mock_script "${script}" "_value_of_flag")
     export mock
+
+    tmp_dir="$(get_temp_working_dir)"
+    export tmp_dir
+}
+
+setup() {
+    tmp_file="${tmp_dir}"/tmp_file.$$
+    touch "${tmp_dir}"/tmp_file.$$ || false
 }
 
 teardown_file() {
     clean_mock "${mock}"
+    rm -rf "${tmp_dir}"
+
     log_test_end
 }
 
@@ -82,7 +96,8 @@ teardown_file() {
 # * +------+---------------+------------------+-------------+----------------+
 # */
 
-@test "[TEST] test_with_flag MC/DC test case for T||F should return T" {
+@test "[TEST] _test_with_flag early exit MC/DC test case for T||F should return T" {
+    # shellcheck disable=SC2030 # Intentionally segmented in BATs subshell.
     tmp_file=""
     flag="f"
     expected="1"
@@ -94,58 +109,58 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_with_flag MC/DC test case for F||T should return T" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
-    touch "${tmp_file}"
+@test "[TEST] _test_with_flag early exit MC/DC test case for F||T should return T" {
     flag=""
     expected="1"
 
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_file}:${flag}" \
+            -x "${expected}"
+    }
 }
 
-@test "[TEST] test_with_flag MC/DC test case for F||F should return F" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
-    touch "${tmp_file}"
+#/**
+# [NOTE]
+# The F||F test case for MC/DC is carried out later as it moves past the actual
+# conditional being tested and has more handling involved.
+# */
+#@test "[TEST] _test_with_flag early exit MC/DC test case for F||F should return F" {
+#    flag="f"
+#    expected="0"
+#
+#    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+#    {
+#        assert_builder \
+#            -m "${mock}" \
+#            -h "${harness}" \
+#            -i "${tmp_file}:${flag}" \
+#            -x "${expected}"
+#    }
+#}
+
+#======================#
+# FILE FLAG TEST CASES #
+#======================#
+
+@test "[TEST] _test_with_flag returns true for supported flag -f and regular file" {
     flag="f"
     expected="0"
 
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_file}:${flag}" \
+            -x "${expected}"
+    }
 }
 
-#=================#
-# FILE TEST CASES #
-#=================#
-
-@test "[TEST] test_with_flag returns true for supported flag -f and regular file" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
-    touch "${tmp_file}"
-    flag="f"
-    expected="0"
-
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
-}
-
-@test "[TEST] test_with_flag returns false for supported flag -f and directory file" {
-    prefix="test_flag_${BATS_TEST_NUMBER}_${BASHPID}"
-    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
+@test "[TEST] _test_with_flag returns false for supported flag -f and directory file" {
     flag="f"
     expected="1"
 
@@ -154,11 +169,9 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_dir}:${flag}" \
         -x "${expected}"
-
-    rmdir "${tmp_dir}"
 }
 
-@test "[TEST] test_with_flag returns false for supported flag -f and non-existant file" {
+@test "[TEST] _test_with_flag returns false for supported flag -f and non-existant file" {
     non_existent_file="/tmp/definitely/does/not/exist/_"$$
     flag="f"
     expected="1"
@@ -170,103 +183,66 @@ teardown_file() {
         -x "${expected}"
 }
 
-#======================#
-# DIRECTORY TEST CASES #
-#======================#
+#===========================#
+# DIRECTORY FLAG TEST CASES #
+#===========================#
 
-@test "[TEST] test_with_flag returns true for supported flag -d and directory" {
-    prefix="test_flag_d_dir_${BATS_TEST_NUMBER}_${BASHPID}"
-    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
+@test "[TEST] _test_with_flag returns true for supported flag -d and directory" {
     flag="d"
     expected="0"
 
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_dir}:${flag}" \
-        -x "${expected}"
-
-    rmdir "${tmp_dir}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_dir}:${flag}" \
+            -x "${expected}"
+    }
 }
 
-@test "[TEST] test_with_flag returns false for supported flag -d and regular file" {
-    prefix="test_flag_d_file_${BATS_TEST_NUMBER}_${BASHPID}"
-    tmp_file=$(mktemp "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
-
-    if [[ ! -f "${tmp_file}" ]]; then
-        fail "Failed to create test file: ${tmp_file}"
-    fi
-
+@test "[TEST] _test_with_flag returns false for supported flag -d and regular file" {
     flag="d"
     expected="1"
 
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_file}:${flag}" \
+            -x "${expected}"
+    }
 }
 
-#=====================#
-# READABLE TEST CASES #
-#=====================#
+#==========================#
+# READABLE FLAG TEST CASES #
+#==========================#
 
-@test "[TEST] test_with_flag returns true for supported flag -r and regular file" {
-    prefix="test_flag_r_file_${BATS_TEST_NUMBER}_${BASHPID}"
-    tmp_file=$(mktemp "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
+@test "[TEST] _test_with_flag returns true for supported flag -r and regular file" {
     flag="r"
     expected="0"
 
-    if [[ ! -f "${tmp_file}" ]]; then
-        fail "Failed to create test file: ${tmp_file}"
-    fi
-
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_file}:${flag}" \
+            -x "${expected}"
+    }
 }
 
-@test "[TEST] test_with_flag returns true for supported flag -r and directory" {
-    prefix="test_flag_r_directory_${BATS_TEST_NUMBER}_${BASHPID}"
-    tmp_dir=$(mktemp -d "${BATS_TEST_TMPDIR}/${prefix}.XXXXXX")
-
-    if [[ ! -d "${tmp_dir}" ]]; then
-        fail "Failed to create test directory: ${tmp_dir}"
-    fi
-
+@test "[TEST] _test_with_flag returns true for supported flag -r and directory" {
     flag="r"
     expected="0"
 
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_dir}:${flag}" \
-        -x "${expected}"
-
-    rmdir "${tmp_dir}"
-}
-
-#=====================#
-# BAD FLAG TEST CASES #
-#=====================#
-
-@test "[TEST] test_with_flag returns false for unsupported flag" {
-    tmp_file="${BATS_TEST_TMPDIR}/test_file_"$$
-    touch "${tmp_file}"
-    flag=""
-    expected="1"
-
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -i "${tmp_file}:${flag}" \
-        -x "${expected}"
-
-    rm "${tmp_file}"
+    # shellcheck disable=SC2031 # Intentionally segmented in BATs subshell.
+    {
+        assert_builder \
+            -m "${mock}" \
+            -h "${harness}" \
+            -i "${tmp_dir}:${flag}" \
+            -x "${expected}"
+    }
 }

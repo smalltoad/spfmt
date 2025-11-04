@@ -74,13 +74,13 @@ function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
     _resolved_flag = _value_of_flag(flag)
     _result = 1 # Until success, assume failiure.
 
-    if (!target || !_resolved_flag) {
+    if (!target || _resolved_flag == "") {
         if (DEV_MODE) {
             if(!target) {
                 print "[DEBUG] Requires a valid test target to be passed." > "/dev/stderr"
             }
             if(!_resolved_flag) {
-                print "[DEBUG] Requires a valid and supported flag to be passed." > "/dev/stderr"
+                print "[DEBUG] Requires a supported flag to be passed." > "/dev/stderr"
             }
         }
         return _result
@@ -134,10 +134,12 @@ function _test_with_flag(target, flag,    _resolved_flag, _cmd, _result) {
 # *     if-else statement. Returns "" if the passed flag matches nothing.
 # */
 function _value_of_flag(flag,    _FILE, _READABLE, _DIRECTORY, _resolved_flag) {
+    # pseudo-enums for supported flags.
     _FILE = "f"
     _READABLE = "r"
     _DIRECTORY = "d"
 
+    # Return empty string for unsupported flags or a malformed flag.
     _resolved_flag = ""
 
     if (flag == _FILE) {
@@ -152,6 +154,5 @@ function _value_of_flag(flag,    _FILE, _READABLE, _DIRECTORY, _resolved_flag) {
         print "[DEBUG] Flag \"" flag "\" is unsupported or malformed." > "/dev/stderr"
     }
 
-    # Return empty string for unsupported flags or a malformed flag.
     return _resolved_flag
 }
