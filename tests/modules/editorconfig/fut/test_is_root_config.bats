@@ -40,6 +40,7 @@ teardown_file() {
 }
 
 teardown() {
+    # Remove all the test scenarios from the base test directory.
     rm -rf "${base}"
 }
 

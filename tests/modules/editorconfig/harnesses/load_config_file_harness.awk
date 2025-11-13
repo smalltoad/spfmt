@@ -13,7 +13,6 @@
 # */
 
 # Indexes to ENVIRON array to keep track of current return value in ":" delineated list.
-
 {
     CURR_FIND_EDITORCONFIG = 0
     CURR_PARSE_EDITORCONFIG_SIZE = 0
@@ -21,11 +20,7 @@
     CURR_IS_ROOT_CONFIG = 0
     CURR_PARENT_DIRECTORY = 0
 
-    # These must match what is in the _parse_editorconfig function to get set.
-    indent_size
-    indent_char
-
-    result = load_config_file($0)
+    result = load_config_file()
 
     # Printed with ":" deliminter, meant for passing to BATS assertion.
     print indent_size ":" indent_char

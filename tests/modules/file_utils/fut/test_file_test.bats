@@ -16,15 +16,32 @@
 # shellcheck disable=SC2154 # BATS_TEST_DIRNAME is provided by BATS.
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
+load "${BATS_TEST_DIRNAME}/../../../bats_helpers/tmp_folder_helper.bash"
 
 script="file_utils.awk"
 harness="test_file_harness.awk"
 
 setup_file() {
     log_test_start
+
+    tmp_dir="$(get_temp_working_dir)"
+    export tmp_dir
+
+    tmp_file="${tmp_dir}/tmp_file"
+    touch "${tmp_file}"
+    export tmp_file
+}
+
+setup() {
+    # Get unique name but dosen't create file.
+    # If a file is created this identifier should be used so it is cleaned up.
+    unique=$(mktemp -u --suffix=".$$")
+    export unique
 }
 
 teardown_file() {
+    rm -rf "${tmp_file}" "${tmp_link}" "${tmp_dir}" "${test_socket}" "${tmp_fifo}" "${unique}"
+
     log_test_end
 }
 
@@ -33,18 +50,17 @@ teardown_file() {
 #============#
 
 # **/
-# * [TEST DOMAIN]
-# *     Regular files   (-)
-# *     Directories     (d)
-# *     Symlinks        (l)
-# *     Char devices    (c)
-# *     Block devices   (b)
-# *     FIFO/named pipe (p)
-# *     Sockets         (s)
+# [TEST DOMAIN]
+#     Regular files   (-)
+#     Directories     (d)
+#     Symlinks        (l)
+#     Char devices    (c)
+#     Block devices   (b)
+#     FIFO/named pipe (p)
+#     Sockets         (s)
 # */
 
 @test "[TEST] test_file returns true when target is a normal file (-)" {
-    tmp_file=$(mktemp --suffix=".$$")
     expected="0"
 
     assert_builder \
@@ -53,11 +69,9 @@ teardown_file() {
         -i "${tmp_file}" \
         -x "${expected}"
 
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_file returns false when target is a directory (d)" {
-    tmp_dir=$(mktemp -d --suffix=".$$")
     expected="1"
 
     assert_builder \
@@ -65,76 +79,51 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_dir}" \
         -x "${expected}"
-
-    rmdir "${tmp_dir}"
 }
 
 @test "[TEST] test_file returns true for symlink pointing to regular file (l)" {
-    tmp_file=$(mktemp --suffix=".$$")
-    tmp_link="${tmp_file}.link"
-
-    ln -s "${tmp_file}" "${tmp_link}"
+    ln -s "${tmp_file}" "${unique}"
     expected="0"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_link}" \
+        -i "${unique}" \
         -x "${expected}"
-
-    rm "${tmp_file}" "${tmp_link}"
 }
 
 @test "[TEST] test_file returns false for symlink pointing to directory (l)" {
-    tmp_dir=$(mktemp -d --suffix=".$$")
-    tmp_link="${tmp_dir}.link"
-
-    ln -s "${tmp_dir}" "${tmp_link}"
+    ln -s "${tmp_dir}" "${unique}"
     expected="1"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_link}" \
+        -i "${unique}" \
         -x "${expected}"
-
-    rmdir "${tmp_dir}"
-    rm "${tmp_link}"
 }
 
 @test "[TEST] test_file returns false for broken symlink (l)" {
-    # Get unique name but dosen't create file.
-    tmp_link=$(mktemp -u --suffix=".$$")
-    tmp_target="${tmp_link}.nonexistent"
-
-    # Create symlink pointing to non-existent target.
-    ln -s "${tmp_target}" "${tmp_link}"
+    fake="${unique}.nonexistent"
+    ln -s "${fake}" "${unique}"
     expected="1"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_link}" \
+        -i "${unique}" \
         -x "${expected}"
-
-    rm "${tmp_link}"
 }
 
 @test "[TEST] test_file returns false for named pipe (FIFO)" {
-    # Get unique name but dosen't create file.
-    tmp_fifo=$(mktemp -u --suffix=".$$")
-
-    # Create named pipe.
-    mkfifo "${tmp_fifo}"
+    mkfifo "${unique}"
     expected="1"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_fifo}" \
+        -i "${unique}" \
         -x "${expected}"
-
-    rm "${tmp_fifo}"
 }
 
 @test "[TEST] test_file returns false for character device (c)" {
@@ -276,7 +265,6 @@ teardown_file() {
         -x "${expected}"
 
     chmod 644 "${tmp_file}"
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_file handles path with spaces (-)" {
@@ -288,8 +276,6 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    rm "${tmp_file}"
 }
 
 @test "[TEST] test_file handles path with special characters (-)" {
@@ -304,6 +290,4 @@ teardown_file() {
         -h "${harness}" \
         -i "${tmp_file}" \
         -x "${expected}"
-
-    rm -rf "${tmp_dir}"
 }

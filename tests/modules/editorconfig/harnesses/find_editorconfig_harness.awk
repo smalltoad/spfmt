@@ -4,10 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: Wrapper for file_utils.awk function of test_readable to print results.
-# File: test_readable_harness.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# Wrapper for file_utils.awk function of test_readable to print results.
+#
+# [FILE] test_readable_harness.bats
+# [LICENSE] GNU GPLv3
+# */
 
 {
     result = _find_editorconfig($0)

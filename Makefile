@@ -158,6 +158,7 @@ test-modules:
 	@echo "Command used:"
 	$(BATS) $(BATS_OPTIONS) $(TEST_DIR)/modules/*/fut/*.bats
 
+# [TODO] Make build tests...
 test-build:
 	@echo "Running tests with configuration:"
 	@echo "    Project Root: $(PROJ_ROOT)"

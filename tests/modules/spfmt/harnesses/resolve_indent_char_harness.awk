@@ -4,10 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description: Wrapper for editorconfig.awk function of resolve_indent_char to print results.
-# File: resolve_indent_char_harness.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# Wrapper for editorconfig.awk function of resolve_indent_char to print results.
+#
+# [FILE] resolve_indent_char_harness.bats
+# [LICENSE] GNU GPLv3
+# */
 
 {
     #/**

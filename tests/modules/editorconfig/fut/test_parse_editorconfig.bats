@@ -44,6 +44,7 @@ teardown_file() {
 }
 
 teardown() {
+    # Remove all the test scenarios from the base test directory.
     rm -rf "${base}"
 }
 
@@ -63,6 +64,7 @@ teardown() {
 }
 
 @test "[TEST] _parse_editorconfig returns nothing for non-existant path" {
+    # shellcheck disable=SC2030 # Intentionally segmented through BATS subshell.
     input="${base}/.editorconfig"
     expected=":"
 

@@ -146,6 +146,7 @@ handle_d() {
 }
 
 handle_c() {
+    # shellcheck disable=SC2312 # Opting into masking return value.
     if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
         printf "Option -c|--indent-char requires an argument.\n"
         exit 2
@@ -167,6 +168,7 @@ handle_c() {
 }
 
 handle_s() {
+    # shellcheck disable=SC2312 # Opting into masking return value.
     if [ $# -lt 2 ] || [ "$(printf '%s' "$2" | cut -c1)" = "-" ]; then
         printf "Option  -s|--indent-size requires an argument.\n"
         exit 2
@@ -217,7 +219,7 @@ parse_cli() {
                 shift 1
                 ;;
             -i | --in-place)
-                awk_vars="${awk_vars}-v in_place=0 "
+                awk_vars="${awk_vars}-v in_place=1 "
                 shift 1
                 ;;
             -c | --indent-char)
@@ -264,7 +266,7 @@ arguments_supplied() {
     return 0
 }
 
-# spfmt does not (currently) handle file inputs and stdin simultaneously.
+# spfmt does not (currently?) handle file inputs and stdin simultaneously.
 ensure_inputs() {
     if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
         printf "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously.\n"

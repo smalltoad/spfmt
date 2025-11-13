@@ -71,7 +71,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] [TEST] load_config_file will aggregate multiple .editorconfig files if the first found config file is not root" {
+@test "[TEST] load_config_file will aggregate multiple .editorconfig files if the first found config file is not root" {
     expected="2:tab"
     env="MOCK_CURRENT_DIRECTORY=\"/tmp/dotfiles\" \
         MOCK_FIND_EDITORCONFIG=\"/tmp/dotfiles/.editorconfig:/tmp/.editorconfig\" \
@@ -84,5 +84,14 @@ teardown_file() {
         -m "${mock}" \
         -h "${harness}" \
         -e "${env}" \
+        -x "${expected}"
+}
+
+@test "[TEST] load_config_file early exits and returns empty string when no path is passed." {
+    expected=":"
+
+    assert_builder \
+        -m "${mock}" \
+        -h "${harness}" \
         -x "${expected}"
 }

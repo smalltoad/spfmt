@@ -29,6 +29,8 @@ setup_file() {
 }
 
 teardown_file() {
+    rmdir -rf "${input}"
+
     log_test_end
 }
 
@@ -67,6 +69,4 @@ teardown_file() {
         -h "${harness}" \
         -i "${input}" \
         -x "${expected}"
-
-    rmdir "${input}"
 }

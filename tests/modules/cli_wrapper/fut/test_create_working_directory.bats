@@ -89,7 +89,7 @@ assert_tmp_dir() {
 assert_trap_command() {
     TRAP_COMMAND="$1"
 
-    # shellcheck disable=SC3010
+    # shellcheck disable=SC3010 # BATS expects Bash interpreter.
     [[ "${TRAP_COMMAND}" = *"${TMP_DIR}"* ]] || {
         printf "[INFO] Unexpected path %s trapped." "${TMP_DIR}"
         return 1
@@ -109,11 +109,13 @@ assert_trap_command() {
         PATH="$(get_tmp_dir):${PATH}"
     }
 
-    # Not using run key word intentionally. Allows for variable capture.
+    #/**
+    # Not using run key word intentionally.
+    # Allows for variable capture into exported variables.
+    # */
     create_working_directory || return 1
 
     assert_tmp_dir "./tmp/path_1"
-
     assert_trap_command "${TRAP_COMMAND}"
 }
 
@@ -131,7 +133,6 @@ assert_trap_command() {
     create_working_directory || return 1
 
     assert_tmp_dir "/var/tmp/spfmt.*"
-
     assert_trap_command "${TRAP_COMMAND}"
 }
 
@@ -166,7 +167,6 @@ assert_trap_command() {
     create_working_directory || return 1
 
     assert_tmp_dir "/var/tmp/spfmt.*"
-
     assert_trap_command "${TRAP_COMMAND}"
 }
 
@@ -183,6 +183,5 @@ assert_trap_command() {
     create_working_directory || return 1
 
     assert_tmp_dir "/tmp"
-
     assert_trap_command "${TRAP_COMMAND}"
 }

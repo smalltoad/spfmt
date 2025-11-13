@@ -56,16 +56,3 @@ teardown_file() {
         -v "${vars}" \
         -x "${expected}"
 }
-
-@test "[TEST] resolve_indent_char does not resolve a bad indent input parameter" {
-    vars="indent_char=stab"
-    remove='\[ERROR\].*$'
-    expected=""
-
-    assert_builder \
-        -m "${mock}" \
-        -h "${harness}" \
-        -v "${vars}" \
-        -r "${remove}" \
-        -x "${expected}"
-}

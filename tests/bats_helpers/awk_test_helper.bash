@@ -5,7 +5,8 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 #/**
-# [DESCRIPTION] BATS helper for AWK testing, streamlines test creation and assertions.
+# [DESCRIPTION]
+# BATS helper for AWK testing, streamlines test creation and assertions.
 #
 # [FILE] awk_test_helper.bats
 # [LICENSE] GNU GPLv3

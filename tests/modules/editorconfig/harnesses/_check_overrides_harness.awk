@@ -5,11 +5,12 @@
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
 #/**
-# DESCRIPTION
+# [DESCRIPTION]
 # Wrapper for editorconfig.awk function of _check_overrides to print results.
 #
-# FILE: _check_overrides_harness.bats
-# LICENSE: GNU GPLv3
+# [FILE] _check_overrides_harness.bats
+# [LICENSE] GNU GPLv3
+# */
 
 {
     #/**

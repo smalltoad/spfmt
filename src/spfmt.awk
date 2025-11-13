@@ -110,7 +110,10 @@ BEGIN {
     # * If the value is not set, it gets defaulted to off (prints to stdout.)
     # */
     if(!in_place) {
-        in_place = 1
+        in_place = 0
+        if (DEV_MODE) {
+            print "[DEBUG] in_place flag not found, setting to default of 0"
+        }
     }
 
     #/**
@@ -119,6 +122,9 @@ BEGIN {
     # */
     if(!OUTPUT_PATH) {
         OUTPUT_PATH = "/var/tmp/"
+        if (DEV_MODE) {
+            print "[DEBUG] output path not found, setting to default of " OUTPUT_PATH
+        }
     }
 
     #=========#
@@ -337,7 +343,7 @@ function flush() {
         close(output_file)
 
         # Logic for determining where the final output needs to go.
-        if (in_place == 0) {
+        if (in_place == 1) {
             # If in place then copy the contents of the .tmp file to the original.
             write_in_place()
         } else {
