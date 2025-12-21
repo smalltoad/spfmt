@@ -4,18 +4,18 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-#/**
+#/******************************************************************************
 # [DESCRIPTION]
 # BATS helper for setting up a temp working directory from within BATS tests.
 #
-# This function very closely mimicks the create_working_directory function in
+# This function very closely mimics the create_working_directory function in
 # the CLI wrapper module for spfmt. As this variant is meant to be used inside
-# of BATS tests it uses BATS variables - will fail if not being run from a BATS
-# environment!
+# of BATS tests it makes use BATS variables and will fail if not being run from
+# a BATS environment!
 #
 # [FILE] tmp_folder_helper.bash
 # [LICENSE] GNU GPLv3
-# */
+# *****************************************************************************/
 
 # In the event mktemp is not on system.
 TMP_DIR_FALLBACK="/tmp"

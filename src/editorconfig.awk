@@ -7,10 +7,11 @@
 #/**
 # [DESCRIPTION]
 # POSIX-compliant AWK script to load in an .editorconfig file.
-# Aims to be a standalone module that can load editorconfigs via awk.
+# Aims to be a standalone module that can load editorconfig files via awk.
 #
 # [FILE] editorconfig.awk
 # [LICENSE] GNU GPLv3
+# */
 
 #=========#
 # LOADERS #
@@ -18,7 +19,7 @@
 
 #/**
 # [DESCRIPTION]
-# Intended entry function to this module that will attempt to find and return
+# Intended entry point to this module that will attempt to find and return
 # .editorconfig files. Will stop crawling when either root config is found
 # or root directory is reached. Prioritizes values in config files closer to
 # where the directory search stems from.
@@ -90,7 +91,7 @@ function load_config_file(    _current_dir, _editorconfig_path, _configs_found, 
             # Is the file we found root? Return of 1 indicates non-root file.
             if (_is_root_config(_editorconfig_path) == 1) {
                 # Move up a directory before iterating again.
-                _current_dir = get_parent_directory()
+                _current_dir = get_parent_directory(_current_dir)
             } else {
                 if (DEBUG_MODE) {
                     print "[DEBUG] Root found, stopping .editorconfig file searching." > "/dev/stderr"
@@ -367,7 +368,7 @@ function _parse_editorconfig(config_file,    line, in_section) {
                     }
 
                     # Update defaults_overriden to see if an early exit should be taken.
-                    _check_overrides()
+                    #_check_overrides()
 
                     continue
                 }
@@ -382,7 +383,7 @@ function _parse_editorconfig(config_file,    line, in_section) {
                         print "[DEBUG] Set indent char as " effective["indent_char"] > "/dev/stderr"
                     }
 
-                    _check_overrides()
+                    #_check_overrides()
 
                     continue
                 }
@@ -394,11 +395,11 @@ function _parse_editorconfig(config_file,    line, in_section) {
 }
 
 #====================#
-# UTILITIY FUNCTIONS #
+# UTILITY FUNCTIONS #
 #====================#
 
 #/**
-# Gets the absoulte path of the current working directory from the process environments variables.
+# Gets the absolute path of the current working directory from the process environments variables.
 # Falls back to "." if pwd is unavailable or not a real directory on the system.
 # */
 function get_current_dir(current_dir) {
@@ -430,7 +431,7 @@ function get_parent_directory(path,    _cmd, _result) {
     return _result
 }
 
-# Bitwise operation to turn defults_overriden into boolean flag.
+# Bitwise operation to turn defaults_overriden into boolean flag.
 function _check_overrides() {
     # Start with true, as soon as one override is false then return false.
     defaults_overriden = 1

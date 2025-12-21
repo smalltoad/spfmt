@@ -10,7 +10,7 @@
 # cli options away from the user.
 #
 # [FILE] cli_wrapper.sh
-# [LICESNE] GNU GPLv3
+# [LICENSE] GNU GPLv3
 # */
 
 #===============#
@@ -94,7 +94,7 @@ create_working_directory() {
     add_trap "rm -rf '${TMP_DIR}'"
 }
 
-# Wrapper to help with mocking the command builtin.
+# Wrapper to help with mocking the command shell builtin.
 command_check() {
     ret="$(command -v -- "$1" 2>/dev/null || :)"
     if [ -n "${ret}" ]; then
@@ -118,7 +118,7 @@ awk_files=""
 awk_vars=""
 
 handle_d() {
-    # Get the consecuative d's
+    # Get the consecutive d's
     debugs="${1#-}"
 
     # Deconstruct debug verbosity and find debug level.
@@ -181,7 +181,7 @@ handle_s() {
             ;;
         *)
             if [ "$2" -lt 1 ]; then
-                printf "Width must be greater than 0, got '%s'.\n" "$2"
+                printf "Size must be greater than 0, got '%s'.\n" "$2"
                 exit 2
             fi
             awk_vars="${awk_vars}-v indent_size=$2 "
@@ -202,30 +202,36 @@ parse_cli() {
                 printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_version=1
                 exit "$?"
                 ;;
+            # Handle the d flag which can take multiple d's
             -d*)
                 handle_d "$1"
                 shift 1
                 ;;
+            # Directly set DEBUG_MODE to true
             --debug)
                 if [ "${DEBUG_MODE}" -eq 0 ]; then
                     DEBUG_MODE=1
                 fi
                 shift 1
                 ;;
+            # Directly set DEV_MODE to true
             --dev-mode)
                 if [ "${DEV_MODE}" -eq 0 ]; then
                     DEV_MODE=1
                 fi
                 shift 1
                 ;;
+            # Modify files in place.
             -i | --in-place)
                 awk_vars="${awk_vars}-v in_place=1 "
                 shift 1
                 ;;
+            # Sets the indent char to use. Look inside of handle c for accepted values.
             -c | --indent-char)
                 handle_c "$1" "$2"
                 shift 2
                 ;;
+            # Sets the indent size to use per indent level.
             -s | --indent-size)
                 handle_s "$1" "$2"
                 shift 2
@@ -234,7 +240,7 @@ parse_cli() {
                 printf "[ERROR] Option %s not recognized.\n" "$1"
                 exit 2
                 ;;
-            # Assume file, assure it is regular and readable. Otherwise bail.
+            # Assume other cases are a file, assure it is regular and readable. Otherwise bail.
             *)
                 if [ ! -f "$1" ]; then
                     printf "[ERROR] Not a file: %s\n" "$1"
@@ -260,6 +266,7 @@ parse_cli() {
 arguments_supplied() {
     if [ -z "$1" ]; then
         printf "[ERROR] spfmt requires at least a file argument.\n"
+        # Opt to show the user help.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
         return 1
     fi
@@ -270,6 +277,7 @@ arguments_supplied() {
 ensure_inputs() {
     if [ -n "${awk_files}" ] && [ ! -t 0 ]; then
         printf "[ERROR] spfmt doesn't handle stdin and file inputs simultaneously.\n"
+        # Opt to show the user help.
         printf '%s\n' "${SPFMT_AWK_PROGRAM}" | awk -f - -v show_help=1
         return 1
     fi
@@ -280,7 +288,7 @@ spfmt() {
     #/**
     # First if-statement handles stdin if in a terminal AND no files were passed.
     #
-    # Because stdin is usually the spfmt awk progam, in order to make room for
+    # Because stdin is usually the spfmt awk program, in order to make room for
     # the users stdin arguments spfmt will be written to a tmp file and then
     # passed as a file arg instead to awk.
     # */

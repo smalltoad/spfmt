@@ -9,7 +9,7 @@
 # Test harness for test_create_working_directory.bash
 #
 # [FILE] create_working_directory_harness.bash
-# [LICESNE] GNU GPLv3
+# [LICENSE] GNU GPLv3
 # */
 
 #/**

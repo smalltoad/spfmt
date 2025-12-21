@@ -212,6 +212,15 @@ collect_lines() {
                 file="${line##* }"
                 buffer="${buffer}"'\n'"SUITE ${file}"
                 ;;
+            #/**
+            # Skipped test, must come before ok check.
+            # As possible output of a skipped test is: "ok XXX ... # skip ..."
+            # */
+            \#\ SKIP* | *\#\ skip*)
+                skipped=$((skipped + 1))
+                total=$((total + 1))
+                buffer="${buffer}"'\n'"${line}"
+                ;;
             # Test that has passed.
             ok\ *)
                 passed=$((passed + 1))
@@ -221,12 +230,6 @@ collect_lines() {
             # Test that has failed.
             not\ ok\ *)
                 failed=$((failed + 1))
-                total=$((total + 1))
-                buffer="${buffer}"'\n'"${line}"
-                ;;
-            # Skipped test.
-            \#\ SKIP* | \#\ skip*)
-                skipped=$((skipped + 1))
                 total=$((total + 1))
                 buffer="${buffer}"'\n'"${line}"
                 ;;

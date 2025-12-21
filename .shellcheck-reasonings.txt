@@ -13,9 +13,13 @@
 # */
 
 shellcheck disable=SC2030 # Intentionally segmented through BATS subshell.
+shellcheck disable=SC2031 # Intentionally segmented through BATS subshell.
 shellcheck disable=SC2053 # Intentionally unquoted to allow for globbing.
 shellcheck disable=SC2154 # BATS_XXX is provided by BATS.
 shellcheck disable=SC2154 # Exported in calling scope.
 shellcheck disable=SC2312 # Opting into masking return value.
+shellcheck disable=SC3003 # BATS expects Bash interpreter.
 shellcheck disable=SC3010 # BATS expects Bash interpreter.
+shellcheck disable=SC3030 # BATS expects Bash interpreter.
+shellcheck disable=SC3054 # BATS expects Bash interpreter
 

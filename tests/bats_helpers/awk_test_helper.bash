@@ -20,6 +20,7 @@ INFO=${INFO:-""}
 
 scripts_location="$(get_src_dir)/"
 wrapper_location="$(get_harness_dir)/"
+build_location="$(get_build_dir)/"
 mock_location="$(get_tmp_dir)/"
 input_path="$(get_test_inputs_dir)/"
 output_path="$(get_test_outputs_dir)/"
@@ -42,6 +43,7 @@ assert_builder() {
     vars=""                   # Passed environment variables.
     mocks=""                  # Mocked function with FUT and stubs.
     files=""                  # Supporting files if needed.
+    build=""                  # Path to build script.
     harnesses=""              # Harness for testing AWK FUT.
     output=""                 # Output file for stdout redirection.
     expected=""               # Expected return of AWK to compare to.
@@ -49,7 +51,7 @@ assert_builder() {
     remove=""                 # To filter out of output before assert.
     exit_code=""
 
-    while getopts "f:h:m:e:i:o:x:v:s:c:r:" opt; do
+    while getopts "f:h:m:e:i:o:x:v:s:c:r:b" opt; do
         case "${opt}" in
         f)
             # Add file to end of command.
@@ -58,6 +60,10 @@ assert_builder() {
         h)
             # Harness to call FUT and expose internals.
             harnesses="${harnesses} -f ${wrapper_location}${OPTARG}"
+            ;;
+        b)
+            # Build flag to specify the combined.awk script.
+            build="${build_location} -f ${build_location}/build"
             ;;
         m)
             # Mocks should be constructed in file setup of tests.
@@ -73,7 +79,7 @@ assert_builder() {
             ;;
         i)
             #/**
-            # Input through stdin, expected ":" deliniated list.
+            # Input through stdin, expected ":" delineated list.
             # If needed harnesses should properly tokenize and parse/set values.
             # */
             input=$(printf '%q' "${OPTARG}") # used for INFO prints
@@ -125,8 +131,8 @@ assert_builder() {
         esac
     done
 
-    # Templeted final command for AWK script.
-    concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${direct}${output}"
+    # Templated final command for AWK script.
+    concat_command="${stdin}${envs}${awk_command}${vars}${mocks}${harnesses}${files}${build}${direct}${output}"
 
     if [[ "${INFO}" -eq 1 ]]; then
         echo "[INFO] Command Used: [${concat_command}]" >&3

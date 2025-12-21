@@ -22,7 +22,7 @@
 
     result = load_config_file()
 
-    # Printed with ":" deliminter, meant for passing to BATS assertion.
+    # Printed with ":" delimiter, meant for passing to BATS assertion.
     print indent_size ":" indent_char
 }
 
@@ -88,8 +88,4 @@ function get_parent_directory() {
     } else {
         return ""
     }
-}
-
-function pop_environ() {
-
 }

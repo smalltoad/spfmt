@@ -31,6 +31,11 @@ get_harness_dir() {
     echo "${BATS_TEST_DIRNAME}/../harnesses"
 }
 
+# Get the build distributable that gets placed in the build dir.
+get_build_dir() {
+    echo "$(get_project_root)/build"
+}
+
 # Get the tmp directory within a test folder.
 get_tmp_dir() {
     echo "${BATS_TEST_DIRNAME}/../tmp"

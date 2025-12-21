@@ -4,17 +4,20 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-#/**
+#/******************************************************************************
 # [DESCRIPTION]
-# BATS helper for setting up file structures to form different testing scenarios.
+# BATS helper for setting up file structures to form different testing scenarios
+# through the use of mktemp. If a more isolated sandbox is desired (chroot jail)
+# then look at either the persistant or temp sandbox helper BATS files that 
+# stand up mount namespaces.
 #
 # [FILE] filesystem_setup_helper.bash
 # [LICENSE] GNU GPLv3
-# */
+# *****************************************************************************/
 
 #/**
 # [DESCRIPTION]
-# Targeted helper in test_find_editorconfig.bats to set up a mock filesystem.
+# Targeted helper in test_find_editorconfig.bats to set up a mock filesystem scenario.
 #
 # @param $1 {integer}
 #     How many directories to seed before the target location.
@@ -29,7 +32,7 @@
 #     Base directory .
 #
 # @return location {path}
-#     The path that the test should expect the location at.
+#     Colon delimited filename and path that the target was placed at.
 #
 # USAGE:
 #    filesystem_setup 3 4 "filename" # 3 deep and 4 above, file name real_readable
@@ -44,7 +47,7 @@ filesystem_setup() {
     # Look at the test/harness for find_editorconfig for more examples.
     # */
     target="$3"
-    base="$4"
+    base="${4:-"/tmp"}"
 
     # Build up the directories before where .editorconfig lives.
     input="${base}" # prepend base dir.
@@ -70,7 +73,7 @@ filesystem_setup() {
         mkdir "${input}"
     done
 
-    # location - Expected location, caller needs to make the file here.
-    # input - Full constructed path.
+    # location - Expected/target location, caller needs to make the file here.
+    # input - Full constructed path from the lowest directory.
     echo "${location}:${input}"
 }

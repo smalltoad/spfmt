@@ -25,44 +25,6 @@ source_harness "create_working_directory_harness.bash"
 
 setup_file() {
     log_test_start
-
-    # Mock mktemp binary that gets added to path for tests that need it.
-    cat >"$(get_tmp_dir)/mktemp" <<'EOF'
-#!/bin/bash
-
-# Happy path where mktemp works and returns zero
-if [[ "${MOCK_MKTEMP}" -eq 1 ]]; then
-    echo ./tmp/path_1
-    exit 0
-# Abnormal path where mktemp is not on system
-elif [[ "${MOCK_MKTEMP}" -eq 2 ]]; then
-    exit 1
-fi
-
-exit 1
-
-EOF
-
-    # Mock mkdir binary that gets added to path for tests that need it.
-    cat >"$(get_tmp_dir)/mkdir" <<'EOF'
-#!/bin/bash
-
-# Happy path where mkdir works
-if [[ "${MOCK_MKDIR}" -eq 1 ]]; then
-    echo "[MOCK MKDIR] Returning pass" >&2
-    exit 0
-# Abnormal path where mkdir fails
-elif [[ "${MOCK_MKDIR}" -eq 2 ]]; then
-    echo "[MOCK MKDIR] Returning failure" >&2
-    exit 1
-fi
-
-exit 1
-
-EOF
-
-    chmod +x "${BATS_TEST_DIRNAME}/../tmp/mktemp"
-    chmod +x "${BATS_TEST_DIRNAME}/../tmp/mkdir"
 }
 
 teardown_file() {

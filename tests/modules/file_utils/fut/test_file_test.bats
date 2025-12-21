@@ -4,10 +4,13 @@
 # \__ \| | | | | | (_| | | | || (_) | (_| | (_| |
 # |___/|_| |_| |_|\__ _|_|_|\__\___/ \___ |\____|
 #
-# Author: Joseph Mowery <mowery.joseph.git@outlook.com>
-# Description:  BATS tests for the test_file function in the editorconfig.awk module.
-# File: test_file_test.bats
-# License: GNU GPLv3
+#/**
+# [DESCRIPTION]
+# BATS tests for the test_file function in the editorconfig.awk module.
+#
+# [FILE] test_file_test.bats
+# [LICENSE] GNU GPLv3
+# */
 
 #========#
 # SET UP #
@@ -33,16 +36,23 @@ setup_file() {
 }
 
 setup() {
-    # Get unique name but dosen't create file.
-    # If a file is created this identifier should be used so it is cleaned up.
+    #/**
+    # Get unique name but doesn't create file.
+    # Only used in some tests.
+    # */
     unique=$(mktemp -u --suffix=".$$")
     export unique
 }
 
 teardown_file() {
-    rm -rf "${tmp_file}" "${tmp_link}" "${tmp_dir}" "${test_socket}" "${tmp_fifo}" "${unique}"
+    # tmp_file lives in tmp_dir, should not need to be explicitly removed.
+    rm -rf "${tmp_dir}" "${tmp_link}" "${test_socket}" "${tmp_fifo}" "${unique}"
 
     log_test_end
+}
+
+teardown() {
+    rm -rf "${unique}"
 }
 
 #============#
@@ -56,11 +66,11 @@ teardown_file() {
 #     Symlinks        (l)
 #     Char devices    (c)
 #     Block devices   (b)
-#     FIFO/named pipe (p)
+#     FIFO/Named pipe (p)
 #     Sockets         (s)
 # */
 
-@test "[TEST] test_file returns true when target is a normal file (-)" {
+@test "[TEST] test_file returns true when target is a real regular file (-)" {
     expected="0"
 
     assert_builder \
@@ -71,7 +81,18 @@ teardown_file() {
 
 }
 
-@test "[TEST] test_file returns false when target is a directory (d)" {
+@test "[TEST] test_file returns false when target is a non-real regular file (-)" {
+    expected="1"
+
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "/not-a-real-file.$$.txt" \
+        -x "${expected}"
+
+}
+
+@test "[TEST] test_file returns false when target is a real directory (d)" {
     expected="1"
 
     assert_builder \
@@ -81,7 +102,17 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file returns true for symlink pointing to regular file (l)" {
+@test "[TEST] test_file returns false when target is a non-real directory (d)" {
+    expected="1"
+
+    assert_builder \
+        -f "${script}" \
+        -h "${harness}" \
+        -i "${tmp_dir}/not-a-real-dir.$$" \
+        -x "${expected}"
+}
+
+@test "[TEST] test_file returns true when target is a symlink pointing to regular file (l)" {
     ln -s "${tmp_file}" "${unique}"
     expected="0"
 
@@ -92,7 +123,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file returns false for symlink pointing to directory (l)" {
+@test "[TEST] test_file returns false when target is a symlink pointing to directory (l)" {
     ln -s "${tmp_dir}" "${unique}"
     expected="1"
 
@@ -103,7 +134,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file returns false for broken symlink (l)" {
+@test "[TEST] test_file returns false when target is a broken symlink (l)" {
     fake="${unique}.nonexistent"
     ln -s "${fake}" "${unique}"
     expected="1"
@@ -115,7 +146,7 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file returns false for named pipe (FIFO)" {
+@test "[TEST] test_file returns false when target is a named pipe (FIFO)" {
     mkfifo "${unique}"
     expected="1"
 
@@ -126,26 +157,39 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file returns false for character device (c)" {
-    # /dev/null is a character device that should exist on all Unix-like systems.
-    target="/dev/null"
+@test "[TEST] test_file returns false when target is a character device (c)" {
+    # shellcheck disable=SC3030 # BATS expects Bash interpreter.
+    char_locations=(
+        /dev/null
+        /dev/random
+        /dev/urandom
+    )
+
+    # Try to find a char device from common locations.
+    # shellcheck disable=SC3054 # BATS expects Bash interpreter.
+    for device in "${char_locations[@]}"; do
+        if [ -c "${device}" ]; then
+            target="${device}"
+            break
+        fi
+    done
+
     expected="1"
 
     # Only run if /dev/null exists.
-    if [ -c "${target}" ]; then
+    if [ -n "${target}" ]; then
         assert_builder \
             -f "${script}" \
             -h "${harness}" \
             -i "${target}" \
             -x "${expected}"
     else
-        skip "Character device /dev/null not available"
+        skip "No accessible char device found for testing"
     fi
 }
 
-@test "[TEST] test_file returns false for block device (b)" {
-    # Reason: This is a BATS test, access to bash is guarenteed.
-    # shellcheck disable=SC3030
+@test "[TEST] test_file returns false when target is a block device (b)" {
+    # shellcheck disable=SC3030 # BATS expects Bash interpreter.
     block_locations=(
         /dev/sda
         /dev/sda1
@@ -157,7 +201,7 @@ teardown_file() {
     expected="1"
 
     # Try to find a block device from common locations.
-    # shellcheck disable=SC3054 # Bash interpreter used in BATS
+    # shellcheck disable=SC3054 # BATS expects Bash interpreter.
     for device in "${block_locations[@]}"; do
         if [ -b "${device}" ]; then
             target="${device}"
@@ -176,22 +220,34 @@ teardown_file() {
     fi
 }
 
-@test "[TEST] test_file returns false for Unix domain socket (s)" {
-    # Create a unique socket path using PID to avoid conflicts in parallel runs
-    test_socket="/tmp/test_socket_$$_${BATS_TEST_NUMBER}"
-    expected="1" # test_file should return false for sockets
+@test "[TEST] test_file returns false when target is a Unix domain socket (s)" {
+    test_socket="${unique}"
+    expected="1" # test_file should return false for sockets.
 
-    # Create a Unix domain socket using socat (if available) or netcat
-    # We'll run this in background and clean it up regardless of test outcome
+    # Create a Unix domain socket using socat (if available) or netcat.
     if command -v socat >/dev/null 2>&1; then
+        #/**
         # socat creates a socket and keeps it open
+        #     UNIX-LISTEN:     - Create a UDS in listen mode
+        #     "${test_socket}" - The FS path to were the socket will be created.
+        #     fork             - Fork a new process for each new connection.
+        #     /dev/null        - Send data to the ether.
+        # */
         socat UNIX-LISTEN:"${test_socket}",fork /dev/null &
-        socket_pid=$!
+        socket_pid=$! # UDS PID required for clean up!
 
-        # Give socat a moment to create the socket
-        sleep 0.1
+        # Poll for socket creation with timeout.
+        timeout=20
+        while [ "${timeout}" -gt 0 ] && [ ! -S "${unique}" ]; do
+            # Can the process be signaled? If not then it has died.
+            if ! kill -0 "${socket_pid}" 2>/dev/null; then
+                skip "socat process died before creating socket"
+            fi
+            sleep 0.1
+            timeout=$((timeout - 1))
+        done
 
-        # Verify the socket was created
+        # Verify the socket was created.
         if [ -S "${test_socket}" ]; then
             assert_builder \
                 -f "${script}" \
@@ -199,18 +255,28 @@ teardown_file() {
                 -i "${test_socket}" \
                 -x "${expected}"
         else
-            skip "Failed to create test socket with socat"
+            skip "Failed to create test socket with socat, possible socket creation timeout."
         fi
 
-        # Clean up: kill socat and remove socket
+        # Clean up, kill socat and remove socket.
         kill "${socket_pid}" 2>/dev/null || true
         rm -f "${test_socket}"
 
     elif command -v nc >/dev/null 2>&1; then
-        # Alternative using netcat (though less reliable for this purpose)
+        # Alternative approach using netcat.
         nc -lU "${test_socket}" &
         socket_pid=$!
-        sleep 0.1
+
+        # Poll for socket creation with timeout.
+        timeout=20
+        while [ "${timeout}" -gt 0 ] && [ ! -S "${unique}" ]; do
+            # Can the process be signaled? If not then it has died.
+            if ! kill -0 "${socket_pid}" 2>/dev/null; then
+                skip "socat process died before creating socket"
+            fi
+            sleep 0.1
+            timeout=$((timeout - 1))
+        done
 
         if [ -S "${test_socket}" ]; then
             assert_builder \
@@ -219,7 +285,7 @@ teardown_file() {
                 -i "${test_socket}" \
                 -x "${expected}"
         else
-            skip "Failed to create test socket with netcat"
+            skip "Failed to create test socket with netcat, possible socket creation timeout."
         fi
 
         kill "${socket_pid}" 2>/dev/null || true
@@ -230,19 +296,7 @@ teardown_file() {
     fi
 }
 
-@test "[TEST] test_file returns false for non-existent file" {
-    # Use a path that's very unlikely to exist.
-    target="/this/path/should/not/exist/$(date +%s%N)"
-    expected="1"
-
-    assert_builder \
-        -f "${script}" \
-        -h "${harness}" \
-        -i "${target}" \
-        -x "${expected}"
-}
-
-@test "[TEST] test_file returns false for empty string" {
+@test "[TEST] test_file returns false for newline" {
     target="\n"
     expected="1"
 
@@ -253,10 +307,9 @@ teardown_file() {
         -x "${expected}"
 }
 
-@test "[TEST] test_file handles file with no read permissions (-)" {
-    tmp_file=$(mktemp --suffix=".$$")
+@test "[TEST] test_file handles returns false when target is a real regular file with no read permissions (-)" {
     chmod 000 "${tmp_file}" # Remove all permissions
-    expected="0"            # Should still be detected as a file, even if unreadable
+    expected="0"            # Should still be flagged as a file, even if unreadable.
 
     assert_builder \
         -f "${script}" \
@@ -267,27 +320,27 @@ teardown_file() {
     chmod 644 "${tmp_file}"
 }
 
-@test "[TEST] test_file handles path with spaces (-)" {
-    tmp_file=$(mktemp --suffix=" with spaces.$$")
+@test "[TEST] test_file returns false when target is a real regular file with spaces in the name (-)" {
+    new_path="${tmp_dir}/ with  spaces   "
+    touch "${new_path}"
     expected="0"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_file}" \
+        -i "${new_path}" \
         -x "${expected}"
 }
 
 @test "[TEST] test_file handles path with special characters (-)" {
-    # Create file with special characters (be careful with shell metacharacters)
-    tmp_dir=$(mktemp -d --suffix=".$$")
-    tmp_file="${tmp_dir}/file-with_special.chars@123"
-    touch "${tmp_file}"
+    new_path="${tmp_dir}/file-with_special.chars?@123!@#$%^%&*()"
+    touch "${new_path}"
     expected="0"
 
     assert_builder \
         -f "${script}" \
         -h "${harness}" \
-        -i "${tmp_file}" \
+        -i "${new_path}" \
         -x "${expected}"
+
 }

@@ -22,14 +22,14 @@ load "${BATS_TEST_DIRNAME}/../../../bats_helpers/awk_test_helper.bash"
 load "${BATS_TEST_DIRNAME}/../../../bats_helpers/sourcing_test_helper.bash"
 
 script="editorconfig.awk"
-harness="find_editorconfig_harness.awk"
+harness="tmp_harness.awk"
 
 setup_file() {
     log_test_start
 }
 
 setup() {
-    # Base tmp directory for mock directory strcture to simulate search environment.
+    # Base tmp directory for mock directory structure to simulate search environment.
     base="$(mktemp -d "/tmp/find_editorconfig_test.XXXXXX")"
 }
 
